@@ -604,10 +604,7 @@ Table of Contents
    *  MUST be signed with an asymmetric algorithm the IdP advertises in
       id_token_signing_alg_values_supported; the IdP MUST reject alg
       values of none and MUST apply the algorithm-verification guidance
-      of [RFC8725];
-
-   *  SHOULD carry an explicit typ that distinguishes it from other JWT
-      types the IdP issues, per Section 9.1; and
+      of [RFC8725]; and
 
    *  MUST NOT be an encrypted ID Token in the base profile.  An
       encrypted ID Token is encrypted to the registered client
@@ -616,6 +613,12 @@ Table of Contents
       reach the Delegate MUST define key handling in a companion profile
       and MUST NOT require the Initiator's private decryption key to be
       shared.
+
+   Because [OpenID.Core] defines no ID-Token-specific typ JOSE header,
+   the IdP separates ID Tokens from other JWT types it issues as
+   described in Section 9.1 (from the other types' explicit markers and
+   from issuance context), not by requiring a distinguishing typ on the
+   ID Token itself.
 
    Where the ID Token would otherwise carry claims unrelated to the
    delegation, deployments SHOULD prefer a purpose-minimized assertion;
@@ -786,18 +789,22 @@ Table of Contents
        type other than the one declared by subject_token_type (for
        example, a JWT access token, JWT client assertion, or ID-JAG
        presented as urn:ietf:params:oauth:token-type:id_token), even
-       when its claims resemble an ID Token; see Section 13.10.  The IdP
-       SHOULD distinguish JWT types by an explicit typ JOSE header per
-       [RFC8725], Section 3.11 (for example, at+jwt for JWT access
-       tokens per [RFC9068], and distinct types for ID Tokens and ID-
-       JAGs) or by a record of what it issued.  Consistent with
-       [I-D.ietf-oauth-rfc7523bis], the IdP MUST NOT reject an
-       otherwise-valid ID Token solely because it carries no
-       distinguishing typ header; instead, an IdP that mints multiple
-       JWT types from one key SHOULD adopt type discipline (explicit typ
-       or an issuance record) so that the positive-mismatch rejection
-       above is effective.  Reliance on claim shape alone to accept a
-       token as an ID Token is NOT RECOMMENDED.
+       when its claims resemble an ID Token; see Section 13.10.
+       [OpenID.Core] does not define an ID-Token-specific typ JOSE
+       header, so the IdP MUST NOT depend on an ID Token carrying a
+       distinguishing typ, and MUST NOT reject an otherwise-valid ID
+       Token because its typ is absent or is the generic JWT.
+       Disambiguation instead rests on the explicit type markers carried
+       by the other, confusable JWT profiles, such as the at+jwt media
+       type for JWT access tokens [RFC9068] and any explicit typ used
+       for client-authentication assertions [I-D.ietf-oauth-rfc7523bis]
+       or for ID-JAGs, together with the IdP's own record of which JWTs
+       it issued as ID Tokens.  An IdP that mints multiple JWT types
+       from one signing key SHOULD apply explicit typing to those other
+       types per [RFC8725], Section 3.11 and/or retain issuance records,
+       so that the positive-mismatch rejection above is effective.
+       Reliance on claim shape alone to accept a token as an ID Token is
+       NOT RECOMMENDED.
 
        An Identity Assertion carrying an existing delegation chain, a
        JWT act claim, or any actor-context representation the IdP itself
