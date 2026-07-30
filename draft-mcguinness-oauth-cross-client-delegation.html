@@ -1051,7 +1051,7 @@ svg {
 </tr></thead>
 <tfoot><tr>
 <td class="left">McGuinness</td>
-<td class="center">Expires 30 January 2027</td>
+<td class="center">Expires 31 January 2027</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1064,12 +1064,12 @@ svg {
 <dd class="internet-draft">draft-mcguinness-oauth-cross-client-delegation-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-07-29" class="published">29 July 2026</time>
+<time datetime="2026-07-30" class="published">30 July 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2027-01-30">30 January 2027</time></dd>
+<dd class="expires"><time datetime="2027-01-31">31 January 2027</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1119,7 +1119,7 @@ svg {
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 30 January 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 31 January 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1353,7 +1353,7 @@ svg {
       <h2 id="name-introduction">
 <a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
       </h2>
-<p id="section-1-1">Modern OAuth deployments increasingly encounter topologies where the OAuth client that authenticates the End-User is not the OAuth client that will present the resulting token to a downstream service.  Enterprise agent-plus-gateway topologies, mobile-app-plus-backend-for-frontend patterns, and Model Context Protocol (MCP) gateway deployments all share this shape: an initiating client (the Initiator) authenticates the End-User and holds an Identity Assertion audienced to itself, while a distinct confidential client (the Delegate) performs the downstream protocol steps on the End-User's behalf.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-1">Modern OAuth deployments increasingly encounter topologies where the OAuth client that authenticates the End-User is not the OAuth client that will present the resulting token to a downstream service.  Enterprise agent-plus-gateway topologies, mobile-app-plus-backend-for-frontend patterns, and Model Context Protocol (MCP) gateway deployments all share this shape: an initiating client (the Initiator) authenticates the End-User and holds an Identity Assertion whose audience is the Initiator itself, while a distinct confidential client (the Delegate) performs the downstream protocol steps on the End-User's behalf.<a href="#section-1-1" class="pilcrow">¶</a></p>
 <p id="section-1-2">OAuth 2.0 <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span> and Token Exchange <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> do not define how an authorization server administers an eligibility relationship between two OAuth client registrations.  Deployments today rely on:<a href="#section-1-2" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-1-3.1">
@@ -1472,6 +1472,11 @@ appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶<
 <dt id="section-2-4.11">Identity Provider (IdP):</dt>
         <dd style="margin-left: 1.5em" id="section-2-4.12">
           <p id="section-2-4.12.1">The authorization server that issued the Identity Assertion and performs the Token Exchange defined by this profile.  This document uses "IdP" consistent with <span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span>.<a href="#section-2-4.12.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-4.13">Client registration:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-4.14">
+          <p id="section-2-4.14.1">The authorization server's record of a registered OAuth client.  Wherever this document compares, resolves, or relates clients (for example, in a CCDR, in Initiator resolution, or in matching an actor to the authenticated client), the unit of identity is the client registration, not the bare <code>client_id</code> string.  When a single issuer identifier serves multiple tenants or administrative partitions, a registration is identified by its full tenant-scoped identity, because a <code>client_id</code> string need not be unique across partitions.<a href="#section-2-4.14.1" class="pilcrow">¶</a></p>
 </dd>
       <dd class="break"></dd>
 </dl>
@@ -1616,6 +1621,7 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
 <a href="#section-4" class="section-number selfRef">4. </a><a href="#name-cross-client-delegation-rel" class="section-name selfRef">Cross-Client Delegation Relationship</a>
       </h2>
 <p id="section-4-1">A Cross-Client Delegation Relationship (CCDR) is an eligibility relationship, administered at the authorization server, between an Initiator client registration and one or more Delegate client registrations.  The CCDR states that a client pairing is eligible for cross-client delegation under IdP policy.  It is an input to authorization policy, not an entitlement to any specific exchange; see <a href="#security-freshness" class="auto internal xref">Section 12.5</a>.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">A CCDR <span class="bcp14">MAY</span> additionally carry, or reference, constraints that bound the exchanges it makes eligible, such as an allowlist of permitted target audiences, resources, or scopes.  When a CCDR carries such constraints, the policy evaluation in step 7 of <a href="#processing-steps" class="auto internal xref">Section 8.1</a> <span class="bcp14">MUST</span> enforce them.  Whether or not a CCDR carries such constraints, that policy evaluation <span class="bcp14">MUST</span> be governed by an explicit, administratively configured policy for the specific (Initiator, Delegate) pair; the mere existence of the CCDR is not that policy.<a href="#section-4-2" class="pilcrow">¶</a></p>
 <div id="ccdr-admin">
 <section id="section-4.1">
         <h3 id="name-establishment-and-administr">
@@ -1623,7 +1629,8 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
         </h3>
 <p id="section-4.1-1">Establishing or modifying a CCDR requires authorization by an administrative principal at the IdP.  A client <span class="bcp14">MUST NOT</span> be permitted to establish or expand a CCDR merely by submitting client metadata values through dynamic client registration or registration management <span>[<a href="#RFC7591" class="cite xref">RFC7591</a>]</span>.  This profile does not define the enrollment protocol or user interface for CCDR management; that is a deployment concern.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
 <p id="section-4.1-2">The authorization server <span class="bcp14">MUST</span> evaluate one consistent effective relationship for each (Initiator, Delegate) pair.  If the metadata views defined in <a href="#client-metadata" class="auto internal xref">Section 4.2</a> are exposed, they <span class="bcp14">MUST</span> reflect the same effective relationship.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
-<p id="section-4.1-3">The relationship <span class="bcp14">MAY</span> be maintained purely in IdP-side configuration.  This profile does not define public discovery of the relationship graph.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-3">Consistent with the definition of client registration in <a href="#conventions" class="auto internal xref">Section 2</a>, the CCDR store and every client comparison in <a href="#processing" class="auto internal xref">Section 8</a> operate on client registrations, not bare <code>client_id</code> strings.  When a single issuer identifier spans multiple tenants or administrative partitions, the IdP <span class="bcp14">MUST</span> disambiguate registrations by their full tenant-scoped identity so that identically named registrations in different partitions cannot satisfy one another's relationships or resolve to one another during Initiator or actor determination.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.1-4">The relationship <span class="bcp14">MAY</span> be maintained purely in IdP-side configuration.  This profile does not define public discovery of the relationship graph.<a href="#section-4.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="client-metadata">
@@ -1650,7 +1657,7 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
 </dd>
         <dd class="break"></dd>
 </dl>
-<p id="section-4.2-6">Each array member <span class="bcp14">MUST</span> be a JSON string containing a <code>client_id</code> in the authorization server's issuer-scoped client namespace.  An omitted parameter conveys no information about whether relationships exist.  An empty array states that the authorization server currently exposes no relationships of that kind to the recipient.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
+<p id="section-4.2-6">Each array member <span class="bcp14">MUST</span> be a JSON string that identifies a client registration in the authorization server's client namespace.  Where a single issuer serves multiple tenants or administrative partitions and <code>client_id</code> strings are not unique across them, each member <span class="bcp14">MUST</span> identify the intended registration unambiguously (for example, by a tenant-qualified identifier), so that the view names the same registration the CCDR store does.  An omitted parameter conveys no information about whether relationships exist.  An empty array states that the authorization server currently exposes no relationships of that kind to the recipient.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
 <p id="section-4.2-7">These values are authorization-server-administered policy views.  Per <a href="#ccdr-admin" class="auto internal xref">Section 4.1</a>, they cannot be self-asserted through registration requests.  An authorization server that receives either parameter in a client registration or registration-management request <span class="bcp14">MUST</span> ignore the submitted value for authorization purposes or reject the request; it <span class="bcp14">MUST NOT</span> establish or expand a CCDR from the submitted value.<a href="#section-4.2-7" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -1684,13 +1691,13 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
 <dt id="section-5-2.7">
 <code>actor_token</code>:</dt>
         <dd style="margin-left: 1.5em" id="section-5-2.8">
-          <p id="section-5-2.8.1"><span class="bcp14">REQUIRED</span>.  An <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span> JWT client assertion identifying the Delegate as the acting party, as described in <a href="#actor-token" class="auto internal xref">Section 6</a>.  Note that <code>actor_token</code> is <span class="bcp14">OPTIONAL</span> in base <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>; this profile requires it.<a href="#section-5-2.8.1" class="pilcrow">¶</a></p>
+          <p id="section-5-2.8.1"><span class="bcp14">REQUIRED</span>.  Under the base profile, an <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span> JWT client assertion identifying the Delegate as the acting party, as described in <a href="#actor-token" class="auto internal xref">Section 6</a>.  Companion specifications <span class="bcp14">MAY</span> define additional actor-credential types per <a href="#actor-token-requirements" class="auto internal xref">Section 6.1</a>.  Note that <code>actor_token</code> is <span class="bcp14">OPTIONAL</span> in base <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>; this profile requires it.<a href="#section-5-2.8.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 <dt id="section-5-2.9">
 <code>actor_token_type</code>:</dt>
         <dd style="margin-left: 1.5em" id="section-5-2.10">
-          <p id="section-5-2.10.1"><span class="bcp14">REQUIRED</span>.  The value <code>urn:ietf:params:oauth:token-type:jwt</code>.<a href="#section-5-2.10.1" class="pilcrow">¶</a></p>
+          <p id="section-5-2.10.1"><span class="bcp14">REQUIRED</span>.  Under the base profile, the value <code>urn:ietf:params:oauth:token-type:jwt</code>.  A companion specification that defines an additional actor-credential type also defines its token type identifier.<a href="#section-5-2.10.1" class="pilcrow">¶</a></p>
 </dd>
       <dd class="break"></dd>
 </dl>
@@ -1720,7 +1727,7 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
             <p id="section-6.1-3.2.1">be verifiable by the IdP under <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span>;<a href="#section-6.1-3.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-6.1-3.3">
-            <p id="section-6.1-3.3.1">include <code>iat</code>, <code>exp</code>, and <code>jti</code> claims and be subject to replay detection;<a href="#section-6.1-3.3.1" class="pilcrow">¶</a></p>
+            <p id="section-6.1-3.3.1">include <code>iat</code>, <code>exp</code>, and <code>jti</code> claims and be subject to replay detection keyed by the IdP's issuer identifier together with the Delegate's <code>client_id</code> and the <code>jti</code> value, independent of the accompanying subject token, Initiator, or CCDR;<a href="#section-6.1-3.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-6.1-3.4">
             <p id="section-6.1-3.4.1">not contain an <code>act</code> claim, because it is a direct credential for the new actor rather than an existing delegation chain; and<a href="#section-6.1-3.4.1" class="pilcrow">¶</a></p>
@@ -1748,7 +1755,7 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
             <p id="section-6.2-2.2.1">the <code>iss</code> and <code>sub</code> claims identify the Delegate's <code>client_id</code>;<a href="#section-6.2-2.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-6.2-2.3">
-            <p id="section-6.2-2.3.1">the <code>aud</code> claim identifies the IdP token endpoint or another audience accepted by the IdP under <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span>;<a href="#section-6.2-2.3.1" class="pilcrow">¶</a></p>
+            <p id="section-6.2-2.3.1">the <code>aud</code> claim <span class="bcp14">SHOULD</span> contain the IdP's issuer identifier as its sole value, consistent with the client-authentication audience rules of <span>[<a href="#I-D.ietf-oauth-rfc7523bis" class="cite xref">I-D.ietf-oauth-rfc7523bis</a>]</span>; an IdP <span class="bcp14">MAY</span> accept other audience values permitted by <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span>, but new deployments are advised that <span>[<a href="#I-D.ietf-oauth-rfc7523bis" class="cite xref">I-D.ietf-oauth-rfc7523bis</a>]</span> forbids the token endpoint URL as a client-authentication audience;<a href="#section-6.2-2.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-6.2-2.4">
             <p id="section-6.2-2.4.1">the JWT includes <code>iat</code>, <code>exp</code>, and <code>jti</code> claims (note that <code>iat</code> and <code>jti</code> are <span class="bcp14">OPTIONAL</span> in base <span>[<a href="#RFC7523" class="cite xref">RFC7523</a>]</span>; this profile requires them);<a href="#section-6.2-2.4.1" class="pilcrow">¶</a></p>
@@ -1801,7 +1808,7 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
 }
 </pre><a href="#section-7-5" class="pilcrow">¶</a>
 </div>
-<p id="section-7-6">For the single-IdP deployment defined by this profile, <code>may_act.iss</code> <span class="bcp14">MUST</span> equal the IdP issuer identifier and <code>may_act.sub</code> <span class="bcp14">MUST</span> equal the Delegate's <code>client_id</code>, unless an applicable companion profile defines a different actor-identifier mapping.  The IdP <span class="bcp14">MUST NOT</span> authorize a different Delegate merely because that Delegate is eligible under the CCDR.  A <code>may_act</code> mismatch <span class="bcp14">MUST</span> cause the exchange to fail.<a href="#section-7-6" class="pilcrow">¶</a></p>
+<p id="section-7-6">For the single-IdP deployment defined by this profile, <code>may_act.iss</code> <span class="bcp14">MUST</span> equal the IdP issuer identifier and <code>may_act.sub</code> <span class="bcp14">MUST</span> equal the Delegate's <code>client_id</code>, unless an applicable companion profile defines a different actor-identifier mapping.  A companion profile that defines a different actor-identifier mapping <span class="bcp14">MUST</span> also define how the equality comparison in step 6 of <a href="#processing-steps" class="auto internal xref">Section 8.1</a> is performed under that mapping and <span class="bcp14">MUST</span> ensure that mapped identifiers do not collide across namespaces.  The IdP <span class="bcp14">MUST NOT</span> authorize a different Delegate merely because that Delegate is eligible under the CCDR.  A <code>may_act</code> mismatch <span class="bcp14">MUST</span> cause the exchange to fail.<a href="#section-7-6" class="pilcrow">¶</a></p>
 <p id="section-7-7">Absence of <code>may_act</code> does not by itself prohibit the exchange.  In that case, the IdP uses the CCDR and current policy to decide whether the authenticated Delegate may become the actor.<a href="#section-7-7" class="pilcrow">¶</a></p>
 <p id="section-7-8">A <code>may_act</code> claim issued by the IdP represents authorization by the IdP for the named actor to act on behalf of the assertion subject.  It does not prove that the Initiator subsequently participated in, or authorized, a particular handoff of the assertion; see <a href="#security-captured" class="auto internal xref">Section 12.3</a>.<a href="#section-7-8" class="pilcrow">¶</a></p>
 </section>
@@ -1819,20 +1826,24 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
 <p id="section-8.1-1">The IdP <span class="bcp14">MUST</span> apply the following processing to a Token Exchange request under this profile:<a href="#section-8.1-1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-8.1-2">
 <li id="section-8.1-2.1">
-            <p id="section-8.1-2.1.1">Validate the <code>subject_token</code> signature, issuer, temporal validity, and all other requirements applicable to its Identity Assertion type, except for the normal requirement that the assertion identify the requesting client as its audience.  This profile replaces that one check with steps 2, 5, and 6 below; it does not relax any other Identity Assertion validation.  An Identity Assertion containing an <code>act</code> claim is outside the base profile and <span class="bcp14">MUST</span> be rejected unless a companion profile defines validation and preservation of its existing delegation chain.<a href="#section-8.1-2.1.1" class="pilcrow">¶</a></p>
+            <p id="section-8.1-2.1.1">Validate the <code>subject_token</code> signature, issuer, temporal validity, and all other requirements applicable to its Identity Assertion type, except for the normal requirement that the assertion identify the requesting client as its audience.  This profile replaces that one check with steps 2, 5, and 6 below; it does not relax any other Identity Assertion validation.  The IdP <span class="bcp14">MUST</span> verify that the assertion's issuer is the IdP's own issuer identifier; assertions from any other issuer, including issuers the IdP trusts for other purposes, are outside this profile.<a href="#section-8.1-2.1.1" class="pilcrow">¶</a></p>
+<p id="section-8.1-2.1.2">
+The IdP <span class="bcp14">MUST</span> determine that the presented token is an Identity Assertion of the declared type from an explicit type indicator or from its own issuance record, not from claim shape alone.  For JWTs, the IdP <span class="bcp14">SHOULD</span> distinguish assertion types by an explicit <code>typ</code> JOSE header per <span>[<a href="#RFC8725" class="cite xref">RFC8725</a>], <a href="https://rfc-editor.org/rfc/rfc8725#section-3.11" class="relref">Section 3.11</a></span> (for example, the <code>at+jwt</code> media type of <span>[<a href="#RFC9068" class="cite xref">RFC9068</a>]</span> for JWT access tokens, and analogously distinct types for ID Tokens and ID-JAGs), or by a record of what it issued.  A JWT access token, JWT client assertion, ID-JAG, or other JWT profile presented as <code>urn:ietf:params:oauth:token-type:id_token</code> <span class="bcp14">MUST</span> be rejected even when its claims resemble an ID Token; see <a href="#security-confusion" class="auto internal xref">Section 12.10</a>.  When the IdP cannot positively establish the assertion type by an explicit indicator or issuance record, it <span class="bcp14">MUST</span> reject the token rather than fall back to inspecting claims.<a href="#section-8.1-2.1.2" class="pilcrow">¶</a></p>
+<p id="section-8.1-2.1.3">
+An Identity Assertion carrying an existing delegation chain, a JWT <code>act</code> claim, or any actor-context representation the IdP itself defines or recognizes in a non-JWT assertion type (for example, a SAML attribute conveying an acting or on-behalf-of party), is outside the base profile and <span class="bcp14">MUST</span> be rejected unless a companion profile defines validation and preservation of that chain.  A companion profile that permits such an input <span class="bcp14">MUST</span> bound chain depth and <span class="bcp14">MUST</span> prevent cycles in the resulting actor chain.<a href="#section-8.1-2.1.3" class="pilcrow">¶</a></p>
 </li>
           <li id="section-8.1-2.2">
             <p id="section-8.1-2.2.1">Determine exactly one Initiator using the assertion-type-specific rules and the IdP's issuer-scoped client-registration mapping:<a href="#section-8.1-2.2.1" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-8.1-2.2.2.1">
-                <p id="section-8.1-2.2.2.1.1">For an ID Token whose <code>aud</code> claim is a string or a single-element array, that audience value identifies the Initiator.  If <code>azp</code> is present in this case, it <span class="bcp14">MUST</span> equal that audience value.  For an ID Token with multiple audience values, the <code>azp</code> claim <span class="bcp14">MUST</span> be present, <span class="bcp14">MUST</span> identify the Initiator, and <span class="bcp14">MUST</span> be one of the audience values.  The selected value <span class="bcp14">MUST</span> resolve to exactly one client registration at the IdP.<a href="#section-8.1-2.2.2.1.1" class="pilcrow">¶</a></p>
+                <p id="section-8.1-2.2.2.1.1">For an ID Token whose <code>aud</code> claim is a string or a single-element array, that audience value selects the Initiator.  If <code>azp</code> is present in this case, it <span class="bcp14">MUST</span> equal that audience value.  For an ID Token with multiple audience values, the <code>azp</code> claim <span class="bcp14">MUST</span> be present and its value selects the Initiator; the <code>azp</code> value <span class="bcp14">MUST</span> be one of the audience values.  The selected value <span class="bcp14">MUST</span> resolve to exactly one client registration at the IdP.  These rules deliberately tighten the <span class="bcp14">OPTIONAL</span> <code>azp</code> mechanism of <span>[<a href="#OpenID.Core" class="cite xref">OpenID.Core</a>]</span> and repurpose it for Initiator selection at the token endpoint; the requirements are imposed by this profile, not by OpenID Connect.<a href="#section-8.1-2.2.2.1.1" class="pilcrow">¶</a></p>
 </li>
               <li class="normal" id="section-8.1-2.2.2.2">
-                <p id="section-8.1-2.2.2.2.1">For a SAML 2.0 assertion, the IdP <span class="bcp14">MUST</span> validate all applicable <code>AudienceRestriction</code> conditions and use its configured mapping from the intended SAML service-provider audience to exactly one Initiator client registration.<a href="#section-8.1-2.2.2.2.1" class="pilcrow">¶</a></p>
+                <p id="section-8.1-2.2.2.2.1">For a SAML 2.0 assertion, the IdP <span class="bcp14">MUST</span> validate all applicable <code>AudienceRestriction</code> conditions and use its configured mapping from the intended SAML service-provider audience to exactly one Initiator client registration.  A SAML 2.0 assertion has no <code>azp</code> equivalent; when the assertion carries more than one <code>Audience</code> value and the configured mapping yields more than one candidate Initiator registration, the IdP <span class="bcp14">MUST</span> reject the assertion as ambiguous.<a href="#section-8.1-2.2.2.2.1" class="pilcrow">¶</a></p>
 </li>
             </ul>
 <p id="section-8.1-2.2.3">
-The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator cannot be determined unambiguously.<a href="#section-8.1-2.2.3" class="pilcrow">¶</a></p>
+The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator cannot be determined unambiguously.  If the resolved Initiator is the same client registration as the client authenticated for the request, the request is not a cross-client delegation and is outside this profile; the IdP <span class="bcp14">MUST NOT</span> apply this profile's audience exception to it and either rejects it or processes it under the applicable base token profile (under which the assertion's audience already matches the requesting client).  Even when the request falls through to base processing, any <code>actor_token</code> present <span class="bcp14">MUST</span> be validated under <a href="#actor-token" class="auto internal xref">Section 6</a>, including its replay requirements.<a href="#section-8.1-2.2.3" class="pilcrow">¶</a></p>
 </li>
           <li id="section-8.1-2.3">
             <p id="section-8.1-2.3.1">Validate <code>actor_token</code> according to its token type and determine the actor identity, per <a href="#actor-token" class="auto internal xref">Section 6</a>.<a href="#section-8.1-2.3.1" class="pilcrow">¶</a></p>
@@ -1872,7 +1883,8 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
             <p id="section-8.2-2.3.1">A request whose <code>audience</code> or <code>resource</code> is unacceptable <span class="bcp14">SHOULD</span> use the <code>invalid_target</code> error code per <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>.<a href="#section-8.2-2.3.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
-<p id="section-8.2-3">Error responses for actor-token validation and <code>may_act</code> or CCDR authorization failures <span class="bcp14">SHOULD NOT</span> reveal the IdP's relationship graph.  In particular, error codes and <code>error_description</code> values <span class="bcp14">SHOULD NOT</span> allow a client to distinguish "no CCDR exists for this pair" from other policy rejections, and <span class="bcp14">SHOULD NOT</span> enumerate eligible Delegates or Initiators.  See <a href="#privacy" class="auto internal xref">Section 13</a>.<a href="#section-8.2-3" class="pilcrow">¶</a></p>
+<p id="section-8.2-3">Because target acceptability (step 7) is evaluated only after the subject token, actor token, CCDR, and <code>may_act</code> checks (steps 1 through 6) have succeeded, an <code>invalid_target</code> response inherently reveals that the (Initiator, Delegate) pair was authorized for this exchange.  An IdP <span class="bcp14">MUST</span> evaluate steps 1 through 6 before step 7 and <span class="bcp14">MUST NOT</span> let a target-acceptability check run, or its result be observable, before those steps have passed.  An IdP that treats the existence of a CCDR as confidential, including from a requester authenticated as the Delegate, therefore <span class="bcp14">MUST</span> return <code>invalid_request</code> uniformly for all step 1 through 7 failures rather than <code>invalid_target</code>, accepting the reduced target diagnostics as the cost of not disclosing the relationship.<a href="#section-8.2-3" class="pilcrow">¶</a></p>
+<p id="section-8.2-4">Error responses for actor-token validation and <code>may_act</code> or CCDR authorization failures <span class="bcp14">SHOULD NOT</span> reveal the IdP's relationship graph.  In particular, <code>error_description</code> values <span class="bcp14">MUST NOT</span> enumerate eligible Delegates or Initiators, and error responses <span class="bcp14">SHOULD NOT</span> allow a client to distinguish "no CCDR exists for this pair" from other policy rejections, whether through error codes, descriptions, or observable differences in processing time.  See <a href="#privacy" class="auto internal xref">Section 13</a>.<a href="#section-8.2-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -1918,8 +1930,10 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
 </pre><a href="#section-9-7" class="pilcrow">¶</a>
 </div>
 <p id="section-9-8">As required by <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span>, nested prior actors are informational and <span class="bcp14">MUST NOT</span> be used by token consumers for access-control decisions.<a href="#section-9-8" class="pilcrow">¶</a></p>
-<p id="section-9-9">Other claims are included according to the requested token type and applicable token profile.  When the IdP issues an opaque access token, its OAuth Token Introspection <span>[<a href="#RFC7662" class="cite xref">RFC7662</a>]</span> response <span class="bcp14">MUST</span> include the <code>act</code> member with the same semantics, as permitted by <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>], <a href="https://rfc-editor.org/rfc/rfc8693#section-4.1" class="relref">Section 4.1</a></span>, and the IdP and protected resource <span class="bcp14">MUST</span> have an arrangement that makes that actor context available for token processing.  The IdP <span class="bcp14">MUST NOT</span> issue a token under this profile when the selected token type and deployment cannot convey the current actor to the token consumer.<a href="#section-9-9" class="pilcrow">¶</a></p>
-<p id="section-9-10">The Token Exchange response is constructed according to <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>], <a href="https://rfc-editor.org/rfc/rfc8693#section-2.2" class="relref">Section 2.2</a></span> and the requested token's profile.  The IdP <span class="bcp14">SHOULD NOT</span> issue a refresh token in response to an exchange under this profile.  If it does, the IdP <span class="bcp14">MUST</span> bind the refresh token to the Delegate, retain the Initiator and CCDR context needed for later authorization, and re-evaluate the current status of the Delegate, Initiator, CCDR, and requested authorization whenever the refresh token is used.  Revoking or narrowing the CCDR <span class="bcp14">MUST</span> prevent the refresh token from obtaining authorization no longer permitted by the effective relationship.<a href="#section-9-10" class="pilcrow">¶</a></p>
+<p id="section-9-9">Other claims are included according to the requested token type and applicable token profile.  When the IdP issues an opaque access token, its OAuth Token Introspection <span>[<a href="#RFC7662" class="cite xref">RFC7662</a>]</span> response <span class="bcp14">MUST</span> include the <code>act</code> member with the same semantics, as permitted by <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>], <a href="https://rfc-editor.org/rfc/rfc8693#section-4.1" class="relref">Section 4.1</a></span>, so that the actor context is available to the protected resource for token processing; if the opaque token is sender-constrained, the introspection response <span class="bcp14">MUST</span> also convey the corresponding <code>cnf</code> member.  The IdP <span class="bcp14">MUST NOT</span> issue a token under this profile when the selected token type and deployment cannot convey the current actor to the token consumer.<a href="#section-9-9" class="pilcrow">¶</a></p>
+<p id="section-9-10">Where the requested token type and deployment support proof of possession, the issued token <span class="bcp14">SHOULD</span> be sender-constrained to a key controlled by the Delegate (for example, via mutual TLS certificate binding <span>[<a href="#RFC8705" class="cite xref">RFC8705</a>]</span> or DPoP <span>[<a href="#RFC9449" class="cite xref">RFC9449</a>]</span>), with the binding conveyed by the <code>cnf</code> claim <span>[<a href="#RFC7800" class="cite xref">RFC7800</a>]</span>.  Sender constraining the issued token bounds the value of a stolen token and complements the captured-assertion controls in <a href="#security-captured" class="auto internal xref">Section 12.3</a>.<a href="#section-9-10" class="pilcrow">¶</a></p>
+<p id="section-9-11">The Token Exchange response is constructed according to <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>], <a href="https://rfc-editor.org/rfc/rfc8693#section-2.2" class="relref">Section 2.2</a></span> and the requested token's profile.  The IdP <span class="bcp14">SHOULD NOT</span> issue a refresh token in response to an exchange under this profile.  If the originating subject token carried a <code>may_act</code> claim, the IdP <span class="bcp14">MUST NOT</span> issue a refresh token: a <code>may_act</code> claim is a point-in-time, per-assertion authorization (see <a href="#may-act" class="auto internal xref">Section 7</a>) that a refresh token, decoupled from that assertion and typically outliving it, cannot preserve.<a href="#section-9-11" class="pilcrow">¶</a></p>
+<p id="section-9-12">If the IdP issues a refresh token in the absence of <code>may_act</code>, it <span class="bcp14">MUST</span> bind the refresh token to the Delegate and <span class="bcp14">MUST</span> record the concrete authorization actually granted at the original exchange, that is, the audience or audiences, resource or resources, scope, and <code>authorization_details</code> present in the issued token, together with the Initiator and CCDR context.  On each use of the refresh token, the IdP <span class="bcp14">MUST</span> re-evaluate the current status of the Delegate, Initiator, and CCDR and <span class="bcp14">MUST</span> re-apply the policy evaluation of step 7 of <a href="#processing-steps" class="auto internal xref">Section 8.1</a>.  The audiences, resources, scope, and <code>authorization_details</code> obtainable through the refresh token <span class="bcp14">MUST NOT</span> exceed the recorded original grant, and <span class="bcp14">MUST</span> be further reduced when current policy or the effective relationship is narrower.  Revoking or narrowing the CCDR <span class="bcp14">MUST</span> prevent the refresh token from obtaining authorization no longer permitted by the effective relationship.<a href="#section-9-12" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="as-metadata">
@@ -1991,7 +2005,7 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
 <a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-rfc-8693-may_act" class="section-name selfRef">RFC 8693 <code>may_act</code></a>
         </h3>
 <p id="section-11.1-1">This profile uses <code>may_act</code> without changing its <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> semantics.  <code>may_act</code> is an input authorization statement identifying an eligible actor; <code>actor_token</code> proves the proposed actor's identity; and <code>act</code> records the actor accepted into the output token.<a href="#section-11.1-1" class="pilcrow">¶</a></p>
-<p id="section-11.1-2">The CCDR is an authorization-server-side eligibility rule that can be used when the subject token does not carry <code>may_act</code>.  When both are present, both must authorize the Delegate; see <a href="#security-conjunctive" class="auto internal xref">Section 12.2</a>.<a href="#section-11.1-2" class="pilcrow">¶</a></p>
+<p id="section-11.1-2">The CCDR is required for every exchange under this profile, whether or not the subject token carries <code>may_act</code>.  When <code>may_act</code> is present, both the CCDR and <code>may_act</code> must authorize the Delegate; <code>may_act</code> narrows the administered relationship and is never a substitute for it.  See <a href="#security-conjunctive" class="auto internal xref">Section 12.2</a>.<a href="#section-11.1-2" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="related-google">
@@ -2075,6 +2089,7 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
 <p id="section-12.3-1">In the absence of a cryptographically authenticated handoff, any Delegate eligible under the CCDR might be able to use a captured bearer Identity Assertion.  A <code>may_act</code> claim limits which Delegate can exploit such a captured assertion but does not prove that the Initiator conveyed it.<a href="#section-12.3-1" class="pilcrow">¶</a></p>
 <p id="section-12.3-2">Deployments <span class="bcp14">SHOULD</span> use short assertion lifetimes.  Where the Identity Assertion carries a <code>jti</code> or another unique identifier, deployments operating a one-time handoff <span class="bcp14">SHOULD</span> record successful use until the assertion expires and reject subsequent use.  Deployments that intentionally permit repeated exchange of one assertion need to bound that behavior by audience, resource, scope, time, and policy.  These subject-token replay controls are separate from the mandatory replay detection for the Delegate's actor token.<a href="#section-12.3-2" class="pilcrow">¶</a></p>
 <p id="section-12.3-3">Where sender constraining is used, the deployment <span class="bcp14">MUST</span> define how proof of possession transitions from the Initiator to the Delegate; an assertion bound only to the Initiator's key cannot be presented by the Delegate.  See <a href="#related-key-binding" class="auto internal xref">Section 11.4</a>.<a href="#section-12.3-3" class="pilcrow">¶</a></p>
+<p id="section-12.3-4">Because this profile raises the value of a captured assertion, deployments <span class="bcp14">SHOULD</span> also sender-constrain the token issued by the exchange to a Delegate-controlled key, per <a href="#issued-token" class="auto internal xref">Section 9</a>, so that a token stolen after issuance is likewise bounded.<a href="#section-12.3-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-delegate-compromise">
@@ -2092,7 +2107,7 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
 <a href="#section-12.5" class="section-number selfRef">12.5. </a><a href="#name-exchange-time-policy-freshn" class="section-name selfRef">Exchange-Time Policy Freshness</a>
         </h3>
 <p id="section-12.5-1">The IdP <span class="bcp14">MUST</span> evaluate policy at exchange time.  The CCDR and <code>may_act</code> establish eligibility, not entitlement to any specific exchange.  Audience, resource, scope, and <code>authorization_details</code> remain subject to policy.<a href="#section-12.5-1" class="pilcrow">¶</a></p>
-<p id="section-12.5-2">The IdP <span class="bcp14">MUST</span> re-check the current status of the Initiator, the Delegate, and their CCDR at each mint.  Prior actors in any nested <code>act</code> chain are informational under <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> and <span class="bcp14">MUST NOT</span> be used for access-control decisions.<a href="#section-12.5-2" class="pilcrow">¶</a></p>
+<p id="section-12.5-2">The IdP <span class="bcp14">MUST</span> re-check the current status of the Initiator, the Delegate, and their CCDR at each mint.  A <code>may_act</code> authorization, when it was present, is bound to the originating assertion and is not re-established at a later mint that does not re-present that assertion; this is why <a href="#issued-token" class="auto internal xref">Section 9</a> forbids issuing a refresh token for an exchange whose subject token carried <code>may_act</code>.  Prior actors in any nested <code>act</code> chain are informational under <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> and <span class="bcp14">MUST NOT</span> be used for access-control decisions.<a href="#section-12.5-2" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-transport">
@@ -2101,7 +2116,8 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
 <a href="#section-12.6" class="section-number selfRef">12.6. </a><a href="#name-transport-of-the-identity-a" class="section-name selfRef">Transport of the Identity Assertion</a>
         </h3>
 <p id="section-12.6-1">This profile does not define how the Initiator conveys the Identity Assertion to the Delegate.  Transport <span class="bcp14">SHOULD</span> provide confidentiality, integrity, and session correlation.<a href="#section-12.6-1" class="pilcrow">¶</a></p>
-<p id="section-12.6-2">Deployments requiring proof that the Initiator actively authorized a particular handoff need an additional Initiator-authenticated mechanism.  Such a mechanism <span class="bcp14">MAY</span> allow the IdP to record the Initiator as a nested prior actor per <a href="#issued-token" class="auto internal xref">Section 9</a>.  <a href="#appendix-handoff" class="auto internal xref">Appendix A.5</a> describes the correlation controls one deployment pattern applies.<a href="#section-12.6-2" class="pilcrow">¶</a></p>
+<p id="section-12.6-2">A Delegate <span class="bcp14">SHOULD</span> accept Identity Assertions only within authenticated invocations that it can correlate with the presenting party, and <span class="bcp14">SHOULD NOT</span> accept assertions submitted over unauthenticated channels.  This applies with particular force when the Initiator is a public client whose <code>client_id</code> is not a secret, because possession of a captured assertion is then the only barrier an unauthenticated submitter must overcome.<a href="#section-12.6-2" class="pilcrow">¶</a></p>
+<p id="section-12.6-3">Deployments requiring proof that the Initiator actively authorized a particular handoff need an additional Initiator-authenticated mechanism.  Such a mechanism <span class="bcp14">MAY</span> allow the IdP to record the Initiator as a nested prior actor per <a href="#issued-token" class="auto internal xref">Section 9</a>.  <a href="#appendix-handoff" class="auto internal xref">Appendix A.5</a> describes the correlation controls one deployment pattern applies.<a href="#section-12.6-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-cross-vendor">
@@ -2117,7 +2133,7 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
         <h3 id="name-consent-semantics">
 <a href="#section-12.8" class="section-number selfRef">12.8. </a><a href="#name-consent-semantics" class="section-name selfRef">Consent Semantics</a>
         </h3>
-<p id="section-12.8-1">Neither a CCDR nor <code>may_act</code> by itself establishes that the End-User understood or approved disclosure to the Delegate.  Deployments <span class="bcp14">MUST</span> have an applicable consent, enterprise-policy, or other authorization basis and <span class="bcp14">SHOULD</span> reflect delegation in user experience where appropriate.<a href="#section-12.8-1" class="pilcrow">¶</a></p>
+<p id="section-12.8-1">Neither a CCDR nor <code>may_act</code> by itself establishes that the End-User understood or approved disclosure to the Delegate.  Deployments are expected to have an applicable consent, enterprise-policy, or other authorization basis and <span class="bcp14">SHOULD</span> reflect delegation in user experience where appropriate.<a href="#section-12.8-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-revocation">
@@ -2192,7 +2208,7 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
             <p id="section-14.2-2.2.1">Client Metadata Description: Array of client identifiers eligible to act as Delegates for this client under the Cross-Client Delegation profile<a href="#section-14.2-2.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-14.2-2.3">
-            <p id="section-14.2-2.3.1">Change Controller: IETF<a href="#section-14.2-2.3.1" class="pilcrow">¶</a></p>
+            <p id="section-14.2-2.3.1">Change Controller: IESG<a href="#section-14.2-2.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-14.2-2.4">
             <p id="section-14.2-2.4.1">Specification Document: <a href="#client-metadata" class="auto internal xref">Section 4.2</a> of this document<a href="#section-14.2-2.4.1" class="pilcrow">¶</a></p>
@@ -2207,7 +2223,7 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
             <p id="section-14.2-4.2.1">Client Metadata Description: Array of client identifiers for Initiators on whose behalf this client is eligible to act under the Cross-Client Delegation profile<a href="#section-14.2-4.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-14.2-4.3">
-            <p id="section-14.2-4.3.1">Change Controller: IETF<a href="#section-14.2-4.3.1" class="pilcrow">¶</a></p>
+            <p id="section-14.2-4.3.1">Change Controller: IESG<a href="#section-14.2-4.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-14.2-4.4">
             <p id="section-14.2-4.4.1">Specification Document: <a href="#client-metadata" class="auto internal xref">Section 4.2</a> of this document<a href="#section-14.2-4.4.1" class="pilcrow">¶</a></p>
@@ -2229,7 +2245,7 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
             <p id="section-14.3-2.2.1">Metadata Description: JSON array of objects describing the subject token type and actor token type combinations accepted under the Cross-Client Delegation profile<a href="#section-14.3-2.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-14.3-2.3">
-            <p id="section-14.3-2.3.1">Change Controller: IETF<a href="#section-14.3-2.3.1" class="pilcrow">¶</a></p>
+            <p id="section-14.3-2.3.1">Change Controller: IESG<a href="#section-14.3-2.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-14.3-2.4">
             <p id="section-14.3-2.4.1">Specification Document: <a href="#as-metadata" class="auto internal xref">Section 10</a> of this document<a href="#section-14.3-2.4.1" class="pilcrow">¶</a></p>
@@ -2334,6 +2350,10 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
 <dt id="I-D.ietf-oauth-attestation-based-client-auth">[I-D.ietf-oauth-attestation-based-client-auth]</dt>
         <dd>
 <span class="refAuthor">Looker, T.</span>, <span class="refAuthor">Bastian, P.</span>, and <span class="refAuthor">C. Bormann</span>, <span class="refTitle">"OAuth 2.0 Attestation-Based Client Authentication"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-oauth-attestation-based-client-auth-10</span>, <time datetime="2026-07-06" class="refDate">6 July 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-attestation-based-client-auth-10">https://datatracker.ietf.org/doc/html/draft-ietf-oauth-attestation-based-client-auth-10</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.ietf-oauth-rfc7523bis">[I-D.ietf-oauth-rfc7523bis]</dt>
+        <dd>
+<span class="refAuthor">Jones, M. B.</span>, <span class="refAuthor">Campbell, B.</span>, <span class="refAuthor">Mortimore, C.</span>, and <span class="refAuthor">F. Skokan</span>, <span class="refTitle">"Updates to OAuth 2.0 JSON Web Token (JWT) Client Authentication and Assertion-Based Authorization Grants"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-oauth-rfc7523bis-11</span>, <time datetime="2026-04-28" class="refDate">28 April 2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rfc7523bis-11">https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rfc7523bis-11</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="I-D.mcguinness-oauth-actor-profile">[I-D.mcguinness-oauth-actor-profile]</dt>
         <dd>
@@ -2631,6 +2651,12 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
 </li>
         <li id="appendix-B-1.7">
           <p id="appendix-B-1.7.1"><strong>Generic client relationships.</strong>  If a broader client-relationships primitive emerges, how should the CCDR be represented within it?<a href="#appendix-B-1.7.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="appendix-B-1.8">
+          <p id="appendix-B-1.8.1"><strong>Multiple eligible Delegates per assertion.</strong>  <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> defines <code>may_act</code> as a single JSON object, so an Identity Assertion can name only one eligible Delegate.  Is a per-assertion authorization for multiple Delegates needed, and if so, how should it be represented without changing <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> semantics?<a href="#appendix-B-1.8.1" class="pilcrow">¶</a></p>
+</li>
+        <li id="appendix-B-1.9">
+          <p id="appendix-B-1.9.1"><strong>ID-JAG extension hook.</strong>  Should the ID-JAG Identity Assertion audience check acknowledge profile-based exceptions such as this one in <span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span> itself, rather than the exception being defined solely by this document?<a href="#appendix-B-1.9.1" class="pilcrow">¶</a></p>
 </li>
       </ol>
 </section>
