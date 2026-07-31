@@ -4,8 +4,8 @@
 
 Web Authorization Protocol                                 K. McGuinness
 Internet-Draft                                               Independent
-Intended status: Standards Track                            30 July 2026
-Expires: 31 January 2027
+Intended status: Standards Track                            31 July 2026
+Expires: 1 February 2027
 
 
       Cross-Client Delegation Profile for OAuth 2.0 Token Exchange
@@ -62,7 +62,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 31 January 2027.
+   This Internet-Draft will expire on 1 February 2027.
 
 Copyright Notice
 
@@ -601,10 +601,10 @@ Table of Contents
       the audience-equals-requesting-client check, which is replaced as
       described in Section 9.1;
 
-   *  MUST be signed with an asymmetric algorithm the IdP advertises in
-      id_token_signing_alg_values_supported; the IdP MUST reject alg
-      values of none and MUST apply the algorithm-verification guidance
-      of [RFC8725]; and
+   *  MUST be signed with an asymmetric algorithm that the IdP supports
+      for ID Token signing; the IdP MUST reject a JOSE alg value of none
+      and MUST apply the algorithm-verification guidance of [RFC8725];
+      and
 
    *  MUST NOT be an encrypted ID Token in the base profile.  An
       encrypted ID Token is encrypted to the registered client
@@ -825,10 +825,13 @@ Table of Contents
           claim MUST be present and its value selects the Initiator; the
           azp value MUST be one of the audience values.  The selected
           value MUST resolve to exactly one client registration at the
-          IdP.  These rules deliberately tighten the OPTIONAL azp
-          mechanism of [OpenID.Core] and repurpose it for Initiator
-          selection at the token endpoint; the requirements are imposed
-          by this profile, not by OpenID Connect.
+          IdP.  These requirements are imposed by this profile, not by
+          [OpenID.Core], which leaves azp OPTIONAL and defines neither a
+          rule that azp be present for multiple audiences nor a rule
+          that azp be one of the aud values.  This profile both tightens
+          azp (requiring its presence in the multi-audience case) and
+          adds the azp-in-aud constraint, and it repurposes azp for
+          Initiator selection at the token endpoint.
 
        *  For a SAML 2.0 assertion, the IdP MUST validate all applicable
           AudienceRestriction conditions and use its configured mapping
@@ -1510,7 +1513,7 @@ Table of Contents
 16.2.  Informative References
 
    [Google.CrossClient]
-              Google, "Google Identity: Cross-client Identity", n.d.,
+              Google, "Cross-client Identity", n.d.,
               <https://developers.google.com/identity/protocols/oauth2/
               cross-client-identity>.
 
