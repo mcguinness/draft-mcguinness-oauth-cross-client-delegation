@@ -135,7 +135,7 @@ Cross-organizational trust establishment:
 : Recognition of a Delegate administered by a different organization is out of scope; see {{security-cross-vendor}}.
 
 Standardizing an authenticated handoff mechanism:
-: This profile does not define or standardize a mechanism that proves the Initiator actively conveyed a particular Identity Assertion to the Delegate.  Such a mechanism is one way to achieve the assertion-bound mode of {{authorization-model}}; {{appendix-handoff}} describes a non-normative approach.  See also {{security-captured}}.
+: This profile does not define or standardize a mechanism that proves the Initiator actively conveyed a particular Identity Assertion to the Delegate.  Such a mechanism raises the handoff-assurance property described in {{authorization-model}}; {{appendix-handoff}} describes a non-normative approach.  See also {{security-captured}}.
 
 End-User consent user experience:
 : How delegation is surfaced to the End-User (if at all) is a deployment concern subject to applicable policy; see {{security-consent}}.
@@ -165,7 +165,7 @@ Per-Assertion Actor Authorization:
 : An optional authorization expressed by an {{RFC8693}} `may_act` claim in an Identity Assertion.  It identifies an actor eligible to act on behalf of the subject of that assertion.  It narrows, and does not expand, the actors permitted by the CCDR and current authorization server policy.  See {{may-act}}.
 
 Identity Assertion:
-: A security token issued by the IdP that conveys claims about the End-User, identifies the Initiator as an intended audience or authorized party, and is suitable for use as `subject_token` in Token Exchange.  In this profile, an Identity Assertion is an OpenID Connect ID Token {{OpenID.Core}} or a SAML 2.0 assertion {{SAML2.Core}}.
+: A security token issued by the IdP that conveys claims about the End-User, identifies the Initiator as an intended audience or authorized party, and is suitable for use as `subject_token` in Token Exchange.  In the mandatory-to-implement combination, an Identity Assertion is an OpenID Connect ID Token {{OpenID.Core}}.  A companion profile may extend the profile to a SAML 2.0 assertion {{SAML2.Core}}; see {{processing-steps}}.
 
 Identity Provider (IdP):
 : The authorization server that issued the Identity Assertion and performs the Token Exchange defined by this profile.  This document uses "IdP" consistent with {{I-D.ietf-oauth-identity-assertion-authz-grant}}.
@@ -283,17 +283,17 @@ Issued token payload (subject to the requested token type):
 
 # Authorization Model {#authorization-model}
 
-This profile authorizes the tuple (subject, Delegate, target audience, resource, scope, `authorization_details`) from three inputs, evaluated conjunctively: the administered CCDR ({{ccdr}}), the optional per-assertion `may_act` authorization ({{may-act}}), and the IdP's exchange-time policy ({{security-freshness}}).  A CCDR and an exchange-time policy evaluation are always required; `may_act` is the only optional input.  Every input that is present must authorize the exchange; none broadens another.
+This profile authorizes the tuple (subject, Initiator, Delegate, target audiences, resources, scope, `authorization_details`) from three inputs, evaluated conjunctively: the administered CCDR ({{ccdr}}), the optional per-assertion `may_act` authorization ({{may-act}}), and the IdP's exchange-time policy ({{security-freshness}}).  The Initiator is part of the tuple because it selects the CCDR and materially affects policy; it is not merely context.  A CCDR and an exchange-time policy evaluation are always required; `may_act` is the only optional input.  Every input that is present must authorize the exchange; none broadens another.
 
-The profile admits two delegation modes, distinguished by what binds the Delegate to the particular assertion being exchanged:
+Two independent properties describe how strongly a given exchange is bound, and they must not be conflated:
 
-Relationship-only delegation:
-: The CCDR and current IdP policy are the entire delegation basis.  Nothing in the request proves that the Initiator conveyed this particular assertion to the Delegate, so any Delegate eligible under the CCDR that obtains an eligible bearer Identity Assertion may be able to exchange it.  This is a legitimate administrative-authorization model, appropriate when the IdP-administered relationship and enterprise policy are themselves the intended basis for delegation, but it explicitly accepts the captured-assertion risk described in {{security-captured}}.  It is the weaker mode.
+Token-endpoint authorization:
+: What the IdP can verify from the request itself.  This ranges from CCDR-only (the administered relationship plus exchange-time policy) to `may_act`-bound or otherwise bound by an IdP-verifiable artifact carried in or with the `subject_token`.  This property is visible to this protocol and is what {{processing-steps}} evaluates.  The IdP SHOULD prefer an IdP-verifiable per-assertion artifact such as `may_act` where the deployment can supply one, because it narrows authorization from "any Delegate eligible under the CCDR with any eligible assertion" toward "this Delegate for this assertion."
 
-Assertion-bound delegation:
-: In addition to the CCDR, an artifact binds the Delegate to this specific assertion: a `may_act` claim naming the Delegate ({{may-act}}), an authenticated and correlated handoff ({{appendix-handoff}}), or another issuer-recognized mechanism.  This mode narrows authorization from "any eligible Delegate with any eligible assertion" toward "this Delegate for this assertion" and is RECOMMENDED wherever the deployment can supply such an artifact.
+Handoff assurance:
+: Whether the Initiator's conveyance of the assertion to the Delegate was authenticated and correlated (see {{appendix-handoff}}) or was uncorrelated bearer forwarding.  This is a deployment property enforced at the Delegate, not at the IdP: nothing representing an authenticated handoff is necessarily present in the Token Exchange request, so the IdP cannot determine it per request, and a compromised Delegate could omit the correlation while sending an otherwise identical request.  Deployments relying on captured-assertion resistance MUST NOT assume the IdP enforces handoff assurance.
 
-Both modes are conformant.  The mode that applies to a given exchange is determined per request by whether an assertion-binding artifact is present; a deployment SHOULD document which mode it intends to operate.  Neither mode, by itself, establishes End-User consent or per-request authorization by the End-User; see {{security-consent}}.  When an exchange proceeds in the relationship-only mode, the compensating controls of {{security}} apply: the IdP SHOULD enforce short assertion lifetimes and replay controls ({{security-captured}}), narrowly scoped CCDRs ({{security-trust-anchor}}), and constrained downstream authorization ({{security-freshness}}).  Whether a future revision should require the assertion-bound mode is left open; see {{open-items}}.
+CCDR-only, uncorrelated-bearer operation is the weakest combination and carries the captured-assertion risk of {{security-captured}}; it is a legitimate administrative-authorization model but the IdP MUST NOT be relied on to detect that a captured assertion was not conveyed by the Initiator.  Neither property, by itself, establishes End-User consent or per-request authorization by the End-User; see {{security-consent}}.  A deployment SHOULD document the token-endpoint authorization it requires and the handoff assurance it enforces, and when it operates without an IdP-verifiable per-assertion artifact SHOULD apply the compensating controls of {{security}}: short assertion lifetimes and replay controls ({{security-captured}}), narrowly scoped CCDRs ({{security-trust-anchor}}), and constrained downstream authorization ({{security-freshness}}).  Whether a future revision should require an IdP-verifiable per-assertion artifact is left open; see {{open-items}}.
 
 
 # Cross-Client Delegation Relationship {#ccdr}
@@ -306,7 +306,7 @@ A CCDR MAY additionally carry, or reference, constraints that bound the exchange
 
 Establishing or modifying a CCDR requires authorization by an administrative principal at the IdP.  A client MUST NOT be permitted to establish or expand a CCDR merely by submitting client metadata values through dynamic client registration or registration management {{RFC7591}}.  This profile does not define the enrollment protocol or user interface for CCDR management; that is a deployment concern.
 
-The authorization server MUST evaluate one consistent effective relationship for each (Initiator, Delegate) pair, and the CCDR store and every client comparison in {{processing}} operate on client registrations, per {{conventions}}.  If the metadata views defined in {{client-metadata}} are exposed, they MUST reflect that same effective relationship, subject to any recipient-scoped filtering applied under {{privacy}} (an empty or omitted view to a recipient not entitled to see a relationship is such filtering, not a statement that no relationship exists).
+The authorization server MUST evaluate one consistent effective relationship for each (Initiator, Delegate) pair, and the CCDR store and every client comparison in {{processing}} operate on client registrations, per {{conventions}}.  The metadata views defined in {{client-metadata}} expose only the relationship endpoints (the peer `client_id` values), not the audience, resource, or scope constraints an effective relationship may carry.  If those views are exposed, their endpoints MUST be consistent with the same effective relationships the IdP enforces, subject to any recipient-scoped filtering applied under {{privacy}} (an empty or omitted view to a recipient not entitled to see a relationship is such filtering, not a statement that no relationship exists).
 
 The relationship MAY be maintained purely in IdP-side configuration.  This profile does not define public discovery of the relationship graph.
 
@@ -340,7 +340,7 @@ A Token Exchange request under this profile is a request to the token endpoint a
 : REQUIRED.  The Initiator's Identity Assertion.
 
 `subject_token_type`:
-: REQUIRED.  A token type identifier appropriate for the Identity Assertion type, for example `urn:ietf:params:oauth:token-type:id_token` or `urn:ietf:params:oauth:token-type:saml2`.
+: REQUIRED.  A token type identifier appropriate for the Identity Assertion type.  For the mandatory-to-implement combination this is `urn:ietf:params:oauth:token-type:id_token`; other identifiers (for example `urn:ietf:params:oauth:token-type:saml2`) require a companion profile that specifies their processing.
 
 `actor_token`:
 : REQUIRED.  Under the base profile, an {{RFC7523}} JWT client assertion identifying the Delegate as the acting party, as described in {{actor-token}}.  Companion specifications MAY define additional actor-credential types per {{actor-token-requirements}}.  Note that `actor_token` is OPTIONAL in base {{RFC8693}}; this profile requires it.
@@ -354,19 +354,33 @@ The Delegate MUST authenticate the Token Exchange request using a client authent
 
 The authenticated client and the actor are distinct protocol concepts.  This profile requires them to identify the same Delegate; see {{actor-token-requirements}}.
 
-An IdP that supports this profile MUST support the combination of an OpenID Connect ID Token as `subject_token` and an {{RFC7523}} JWT client assertion as `actor_token`.  This combination is the mandatory-to-implement core of the profile.  Everything else the document describes is OPTIONAL: SAML 2.0 Identity Assertions, actor-credential types defined by companion specifications, the client-metadata views of {{client-metadata}}, refresh tokens ({{issued-token}}), and output token types other than ID-JAG.  An implementation conforms by supporting the core; optional features are additive.
+An IdP that supports this profile MUST support the mandatory-to-implement combination: an OpenID Connect ID Token as `subject_token`, an {{RFC7523}} JWT client assertion as `actor_token`, and, as output, a JWT access token {{RFC9068}} that carries the Delegate as actor in the `act` claim ({{issued-token}}).  This combination is independently implementable today and does not depend on any other specification's progression.
+
+Everything else the document describes is OPTIONAL and additive: SAML 2.0 Identity Assertions as input (which require a companion profile, see {{processing-steps}}), actor-credential types defined by companion specifications, the client-metadata views of {{client-metadata}}, refresh tokens ({{issued-token}}), and output token types other than a JWT access token.  In particular, issuing an ID-JAG {{I-D.ietf-oauth-identity-assertion-authz-grant}} as output is OPTIONAL and, as {{related-idjag}} explains, is not yet jointly implementable with unmodified ID-JAG; it is therefore not part of the mandatory core.  An implementation conforms by supporting the mandatory combination.
 
 ## Accepted ID Token Profile {#id-token-profile}
 
-For the mandatory-to-implement combination, an ID Token used as `subject_token`:
+An ID Token used as `subject_token` in the mandatory-to-implement combination is validated at the token endpoint by the IdP that issued it, not by a relying party.  Relying-party ID Token validation steps that assume an authorization-response context, such as `nonce` correlation and flow-specific state, do not apply.  This subsection gives the token-endpoint validation algorithm for the ID Token case; it refines step 1 of {{processing-steps}} and does not duplicate other steps.  The IdP MUST validate:
 
-*  MUST be a signed JWT that the IdP itself issued (`iss` equal to the IdP's issuer identifier), validated per {{OpenID.Core}} except for the audience-equals-requesting-client check, which is replaced as described in {{processing-steps}};
+*  **Signature and algorithm.**  The signature verifies under a key the IdP publishes for ID Token signing, using an asymmetric `alg` the IdP supports; the IdP MUST reject a JOSE `alg` of `none` and MUST apply the algorithm-verification guidance of {{RFC8725}}.
 
-*  MUST be signed with an asymmetric algorithm that the IdP supports for ID Token signing; the IdP MUST reject a JOSE `alg` value of `none` and MUST apply the algorithm-verification guidance of {{RFC8725}};
+*  **Issuer.**  `iss` is exactly the IdP's own issuer identifier.
 
-*  MUST NOT be an encrypted ID Token in the base profile.  An encrypted ID Token is encrypted to the registered client (typically the Initiator), and a Delegate normally lacks the decryption key; a deployment that needs encrypted assertions to reach the Delegate MUST define key handling in a companion profile and MUST NOT require the Initiator's private decryption key to be shared; and
+*  **Temporal validity.**  `exp`, and `nbf`/`iat` where present, are within acceptable bounds.
 
-*  MUST NOT be a sender-constrained or proof-of-possession-bound ID Token (for example, one bound to the Initiator's key via OpenID Connect Key Binding {{OpenID.KeyBinding}} or DPoP {{RFC9449}}) in the base profile.  The Delegate cannot demonstrate possession of the Initiator's key, so full unrelaxed validation of such an assertion (which {{processing-steps}} step 1 requires) cannot succeed.  A deployment combining key binding with this profile MUST define a presenter-transition mechanism in a companion profile, as required by {{security-captured}}; see also {{related-key-binding}}.
+*  **Type.**  The token is not positively identifiable as a JWT type other than an ID Token, per the type-disambiguation rule in step 1 of {{processing-steps}}.
+
+*  **Initiator resolution.**  The `aud`/`azp` resolution of {{processing-steps}} step 2 yields exactly one Initiator client registration.  The audience-equals-requesting-client check is replaced as described there and is the only ID Token validation this profile relaxes.
+
+*  **Registration status.**  The Initiator and Delegate registrations are currently enabled (also required by {{processing-steps}} step 5).
+
+*  **Issuance and revocation state.**  Where the IdP maintains such state, the ID Token has not been revoked or superseded.
+
+*  **Authentication context.**  Any authentication-context or assurance policy the IdP applies to this exchange is satisfied.
+
+The ID Token additionally MUST NOT be encrypted in the base profile: an encrypted ID Token is encrypted to the registered client (typically the Initiator), and a Delegate normally lacks the decryption key; a deployment that needs encrypted assertions to reach the Delegate MUST define key handling in a companion profile and MUST NOT require the Initiator's private decryption key to be shared.
+
+The ID Token additionally MUST NOT be a sender-constrained or proof-of-possession-bound ID Token (for example, one bound to the Initiator's key via OpenID Connect Key Binding {{OpenID.KeyBinding}}) in the base profile.  The Delegate cannot demonstrate possession of the Initiator's key, so full unrelaxed validation of such an assertion cannot succeed.  A deployment combining key binding with this profile MUST define a presenter-transition mechanism in a companion profile, as required by {{security-captured}}; see also {{related-key-binding}}.  (Note that DPoP {{RFC9449}} binds OAuth access and refresh tokens, not ID Tokens, so it is not a mechanism for binding an ID Token used here; DPoP remains applicable to the access token issued as output and to a Broker-audience access token in {{appendix-broker}}.)
 
 Because {{OpenID.Core}} defines no ID-Token-specific `typ` JOSE header, the IdP separates ID Tokens from other JWT types it issues as described in {{processing-steps}} (from the other types' explicit markers and from issuance context), not by requiring a distinguishing `typ` on the ID Token itself.
 
@@ -449,29 +463,39 @@ A `may_act` claim issued by the IdP represents authorization by the IdP for the 
 
 ## Profile Selection {#profile-selection}
 
-A Token Exchange request under this profile is a request to the token endpoint with the parameters of {{request}}.  This profile defines no request parameter that names itself; the profile is selected by the request's content rather than by an explicit flag.  Specifically, the IdP first authenticates the requesting client and resolves the Initiator from the `subject_token` as in step 2 of {{processing-steps}}, then:
+A Token Exchange request under this profile is a request to the token endpoint with the parameters of {{request}}.  This profile defines no request parameter that names itself; selection is by request content.  To avoid a circular dependency on this profile's own audience relaxation, the IdP dispatches using only requester authentication, assertion-type-independent validation, and provisional Initiator resolution, and applies the relaxation only after the profile's full checks succeed.  The IdP applies the following phased algorithm:
 
-*  If the resolved Initiator is the same client registration as the authenticated client, the request is not a cross-client delegation.  This profile does not apply; the request is a same-client exchange governed by base {{RFC8693}} and the applicable token profile (under which the assertion's audience already matches the requesting client).
+1. Authenticate the requesting client per {{request}}.
 
-*  If the resolved Initiator is a different client registration from the authenticated client, the request is a cross-client delegation and this profile governs.  The IdP MUST then apply the processing in {{processing-steps}} in full, including the CCDR, actor-token, and `may_act` checks.  In particular, the IdP MUST NOT treat the authenticated client's membership in a multi-valued `aud` claim of the `subject_token` as satisfying the base audience requirement, and MUST NOT issue a token on that basis while skipping this profile's checks; the Initiator resolved in step 2 (via `azp` for a multi-valued `aud`) is authoritative.
+2. Perform the validation of the `subject_token` that does not depend on which profile governs: verify the signature, that the issuer is the IdP's own issuer identifier, temporal validity, and that the token is not positively identifiable as a type other than the declared `subject_token_type`.  These are the checks in step 1 of {{processing-steps}} other than the audience-equals-requesting-client check, which is neither performed nor relaxed at this phase.
+
+3. Provisionally resolve the Initiator from the validated assertion using the rules in step 2 of {{processing-steps}}.
+
+4. Select processing based on the provisional Initiator:
+
+   *  If the resolved Initiator is the same client registration as the authenticated client, this profile does not govern.  The request is a same-client exchange handled under base {{RFC8693}} and the applicable token profile, whose audience check the assertion already satisfies.
+
+   *  Otherwise the request is a cross-client delegation and this profile governs.
+
+5. When this profile governs, apply the remaining rules of {{processing-steps}} (steps 3 through 8: actor token, CCDR, `may_act`, policy, and issuance) in full.  Only successful completion of these rules authorizes relaxing the audience-equals-requesting-client check.  The IdP MUST NOT relax that check, and MUST NOT treat the authenticated client's membership in a multi-valued `aud` claim as satisfying it, on any other basis.
 
 An IdP that receives a request it cannot process under either the base profile or this profile MUST return an error per {{errors}}.
 
 ## Processing Rules {#processing-steps}
 
-The IdP MUST apply the following processing to a Token Exchange request that this profile governs:
+The following steps specify the full processing.  Per {{profile-selection}}, steps 1 and 2 (subject-token validation other than the audience check, and Initiator resolution) are performed during profile selection and yield the same result regardless of which profile governs; steps 3 through 8 are performed once this profile governs.  Presented as one sequence, the IdP MUST apply:
 
 1. Validate the `subject_token` signature, issuer, temporal validity, and all other requirements applicable to its Identity Assertion type, except for the normal requirement that the assertion identify the requesting client as its audience.  This profile replaces that one check with steps 2, 5, and 6 below; it does not relax any other Identity Assertion validation.  The IdP MUST verify that the assertion's issuer is the IdP's own issuer identifier; assertions from any other issuer, including issuers the IdP trusts for other purposes, are outside this profile.
 
-   The IdP MUST reject a token that it can positively identify as a type other than the one declared by `subject_token_type` (for example, a JWT access token, JWT client assertion, or ID-JAG presented as `urn:ietf:params:oauth:token-type:id_token`), even when its claims resemble an ID Token; see {{security-confusion}}.  {{OpenID.Core}} does not define an ID-Token-specific `typ` JOSE header, so the IdP MUST NOT depend on an ID Token carrying a distinguishing `typ`, and MUST NOT reject an otherwise-valid ID Token because its `typ` is absent or is the generic `JWT`.  Disambiguation instead rests on the explicit type markers carried by the other, confusable JWT profiles, such as the `at+jwt` media type for JWT access tokens {{RFC9068}} and any explicit `typ` used for client-authentication assertions {{I-D.ietf-oauth-rfc7523bis}} or for ID-JAGs, together with the IdP's own record of which JWTs it issued as ID Tokens.  An IdP that mints multiple JWT types from one signing key SHOULD apply explicit typing to those other types per {{RFC8725, Section 3.11}} and/or retain issuance records, so that the positive-mismatch rejection above is effective.  Reliance on claim shape alone to accept a token as an ID Token is NOT RECOMMENDED.
+   The IdP MUST reject a token that it can positively identify as a type other than the one declared by `subject_token_type` (for example, a JWT access token, JWT client assertion, or ID-JAG presented as `urn:ietf:params:oauth:token-type:id_token`), even when its claims resemble an ID Token; see {{security-confusion}}.  {{OpenID.Core}} does not define an ID-Token-specific `typ` JOSE header, so the IdP MUST NOT depend on an ID Token carrying a distinguishing `typ`, and MUST NOT reject an otherwise-valid ID Token because its `typ` is absent or is the generic `JWT`.  Disambiguation instead rests on the explicit type markers carried by the other, confusable JWT profiles, such as the `at+jwt` media type for JWT access tokens {{RFC9068}} and any explicit `typ` used for client-authentication assertions {{I-D.ietf-oauth-rfc7523bis}} or for ID-JAGs, together with the IdP's own record of which JWTs it issued as ID Tokens.  An IdP that mints multiple JWT types from one signing key SHOULD apply explicit typing to those other types per {{RFC8725, Section 3.11}} and/or retain issuance records, so that the positive-mismatch rejection above is effective.  Reliance on claim shape alone to accept a token as an ID Token is NOT RECOMMENDED.  If the IdP cannot distinguish the presented JWT from another JWT type it issues, it MUST reject the token rather than accept it as the declared type.
 
    An Identity Assertion carrying an existing delegation chain, a JWT `act` claim, or any actor-context representation the IdP itself defines or recognizes in a non-JWT assertion type (for example, a SAML attribute conveying an acting or on-behalf-of party), is outside the base profile and MUST be rejected unless a companion profile defines validation and preservation of that chain.  A companion profile that permits such an input MUST bound chain depth and MUST prevent cycles in the resulting actor chain.
 
 2. Determine exactly one Initiator using the assertion-type-specific rules and the IdP's issuer-scoped client-registration mapping:
 
-   * For an ID Token whose `aud` claim is a string or a single-element array, that audience value selects the Initiator.  If `azp` is present in this case, it MUST equal that audience value.  For an ID Token with multiple audience values, the `azp` claim MUST be present and its value selects the Initiator; the `azp` value MUST be one of the audience values.  The selected value MUST resolve to exactly one client registration at the IdP.  These requirements are imposed by this profile, not by {{OpenID.Core}}, which leaves `azp` OPTIONAL and defines neither a rule that `azp` be present for multiple audiences nor a rule that `azp` be one of the `aud` values.  This profile both tightens `azp` (requiring its presence in the multi-audience case) and adds the `azp`-in-`aud` constraint, and it repurposes `azp` for Initiator selection at the token endpoint.
+   * For an ID Token, the Initiator is identified by the `azp` (authorized party) claim when `azp` is present, and otherwise by the sole `aud` value.  Consistent with {{OpenID.Core}}, `azp` names the party to which the ID Token was issued, so it is authoritative for Initiator selection whether or not it also appears in `aud`.  If `azp` is absent and `aud` has more than one value, the Initiator cannot be determined and the IdP MUST reject the assertion.  The selected identifier MUST resolve to exactly one client registration at the IdP.  Requiring `azp` to be present whenever `aud` is multi-valued is a constraint this profile imposes for unambiguous Initiator selection; it is not required by {{OpenID.Core}}, which leaves `azp` OPTIONAL.
 
-   * For a SAML 2.0 assertion, the IdP MUST validate all applicable `AudienceRestriction` conditions and use its configured mapping from the intended SAML service-provider audience to exactly one Initiator client registration.  A SAML 2.0 assertion has no `azp` equivalent; when the assertion carries more than one `Audience` value and the configured mapping yields more than one candidate Initiator registration, the IdP MUST reject the assertion as ambiguous.
+   * SAML 2.0 assertions are not fully specified as `subject_token` by this document and require a companion profile.  Initiator resolution from a SAML assertion would use `AudienceRestriction`/`Audience` and a configured service-provider-to-registration mapping, but a complete SAML input profile must also define subject confirmation, recipient validation, replay and `OneTimeUse` handling, and holder-of-key confirmation.  Until such a companion profile exists, an IdP MUST NOT accept a SAML 2.0 assertion under this profile.
 
    The IdP MUST reject an assertion when the Initiator cannot be determined unambiguously.  If the resolved Initiator is the same client registration as the client authenticated for the request, this profile does not govern the exchange, per {{profile-selection}}; the IdP processes it under base {{RFC8693}} and the applicable token profile and MUST NOT apply this profile's audience exception to it.
 
@@ -506,7 +530,7 @@ Error responses for actor-token validation and `may_act` or CCDR authorization f
 
 # Issued Token {#issued-token}
 
-Every token issued under this profile MUST make the accepted actor context available to the token consumer.  A JWT issued under this profile MUST contain:
+Every token that this profile causes to be presented to a token consumer (a resource server or a downstream authorization server) MUST make the accepted actor context available to that consumer.  This requirement governs access tokens and other consumer-facing tokens; it does not apply to a refresh token, which is presented back to the IdP rather than to a token consumer and which retains the actor, Initiator, and CCDR context in IdP-side state per this section.  For the mandatory-to-implement combination, the consumer-facing output is a JWT access token {{RFC9068}}.  A JWT issued under this profile MUST contain:
 
 *  `sub`: an identifier for the End-User appropriate to the issued token's audience;
 
@@ -575,12 +599,6 @@ Example authorization server metadata:
         "urn:ietf:params:oauth:token-type:id_token",
       "actor_token_type":
         "urn:ietf:params:oauth:token-type:jwt"
-    },
-    {
-      "subject_token_type":
-        "urn:ietf:params:oauth:token-type:saml2",
-      "actor_token_type":
-        "urn:ietf:params:oauth:token-type:jwt"
     }
   ]
 }
@@ -607,7 +625,7 @@ Deployments MAY implement both OpenID Connect cross-client identity conventions 
 
 This profile is intended to compose with ID-JAG Token Exchange {{I-D.ietf-oauth-identity-assertion-authz-grant}}.  When the requested token is an ID-JAG (`requested_token_type` of `urn:ietf:params:oauth:token-type:id-jag`), the issued ID-JAG carries the Delegate as the current actor, and the ID-JAG's base audience and client-binding rules otherwise continue to apply, with only the Identity Assertion audience-equals-requesting-client check replaced by the processing rules in {{processing}}.  No other ID-JAG validation rule is relaxed.
 
-This composition has an unresolved normative dependency.  ID-JAG currently requires, without exception, that the Identity Assertion's audience match the `client_id` of the client authenticating the Token Exchange request, and its extension points do not today provide a hook for a profile such as this one to introduce that exception.  As a result, an implementation cannot presently satisfy both this profile and unmodified ID-JAG at the same time.  This document does not, by itself, have the authority to override ID-JAG's requirement.  Closing this gap requires one of: an extension hook added to ID-JAG; a coordinated update in which this document formally updates ID-JAG (for example, via an "Updates" relationship) with matching normative text in both drafts; or defining cross-client delegation within ID-JAG itself.  This is a normative prerequisite for the ID-JAG composition, tracked as item 9 in {{open-items}}; until it is resolved, the ID-JAG composition and the Enterprise Broker pattern of {{appendix-broker}} are illustrative of the intended end state rather than jointly implementable with unmodified ID-JAG.  The generic Token-Exchange-layer profile in the body of this document does not depend on that resolution.
+This composition has an unresolved normative dependency.  ID-JAG currently requires, without exception, that the Identity Assertion's audience match the `client_id` of the client authenticating the Token Exchange request, and its extension points do not today provide a hook for a profile such as this one to introduce that exception.  As a result, an implementation cannot presently satisfy both this profile and unmodified ID-JAG at the same time.  This document does not, by itself, have the authority to override ID-JAG's requirement.  Closing this gap requires one of: an extension hook added to ID-JAG; a coordinated update in which this document formally updates ID-JAG (for example, via an "Updates" relationship) with matching normative text in both drafts; or defining cross-client delegation within ID-JAG itself.  This is a normative prerequisite for the ID-JAG composition, tracked as open question 7 in {{open-items}}; until it is resolved, the ID-JAG composition and the Enterprise Broker pattern of {{appendix-broker}} are illustrative of the intended end state rather than jointly implementable with unmodified ID-JAG.  The mandatory-to-implement combination of this profile ({{request}}), which issues a JWT access token, does not depend on that resolution and is implementable today.  This document does, however, reuse two ID-JAG-defined discovery and registration conventions even for the mandatory combination: the `authorization_grant_profiles_supported` metadata parameter ({{as-metadata}}) and the `urn:ietf:params:oauth:grant-profile:` value convention ({{iana}}).  That is a dependency of this profile's discovery and IANA model, distinct from the audience-resolution dependency above; if ID-JAG does not progress, a future revision of this document may need to define an independent discovery parameter and grant-profile registration.
 
 The Initiator is not automatically a nested actor.  Recording it as a prior actor requires an additional authenticated handoff mechanism as described in {{issued-token}}.
 
@@ -923,16 +941,16 @@ Client attestation ({{I-D.ietf-oauth-attestation-based-client-auth}}) can authen
 The following positions are settled for this revision.  They are recorded here, rather than left as open questions, so implementers know what to build; the working group may revisit any of them.
 
 Two conformant authorization modes:
-: This revision admits both relationship-only and assertion-bound delegation ({{authorization-model}}) as conformant, with assertion-bound RECOMMENDED and relationship-only the explicitly weaker mode subject to compensating controls.  It does not require `may_act` for OpenID Connect-based deployments.  Whether a future revision should require the assertion-bound mode is left open (see {{security-captured}} for the risk that motivates the question).
+: Following the two-axis model of {{authorization-model}}, this revision does not require an IdP-verifiable per-assertion artifact: both CCDR-only and `may_act`-bound token-endpoint authorization are conformant, with the `may_act`-bound form RECOMMENDED.  Handoff assurance (authenticated-and-correlated versus uncorrelated bearer) is a deployment property this protocol does not enforce.  Whether a future revision should require an IdP-verifiable per-assertion artifact is left open (see {{security-captured}} for the risk that motivates the question).
 
 Actor credential:
 : The base profile is limited to an {{RFC7523}} JWT client assertion as `actor_token` ({{actor-token}}).  Workload credentials and access tokens as actor credentials are deferred to companion profiles.
 
 ID-JAG relationship:
-: This document declares its dependency on ID-JAG in prose ({{related-idjag}}) and does not assert a formal "Updates" relationship to it.  ID-JAG is an unpublished Internet-Draft, and the audience-check exception is best introduced by coordinated normative text in ID-JAG itself rather than by this document claiming to modify it.  The generic Token-Exchange-layer mechanism defined in the body does not depend on that coordination; only the ID-JAG composition does.  Which coordination path the working group adopts remains open (an extension hook in ID-JAG, coordinated text in both drafts, or defining cross-client delegation within ID-JAG).
+: This document declares its dependency on ID-JAG in prose ({{related-idjag}}) and does not assert a formal "Updates" relationship to it.  ID-JAG is an unpublished Internet-Draft, and the audience-check exception is best introduced by coordinated normative text in ID-JAG itself rather than by this document claiming to modify it.  The mandatory-to-implement combination does not depend on that audience-resolution coordination; the ID-JAG output composition does.  Separately, this profile's discovery and IANA model reuse ID-JAG's `authorization_grant_profiles_supported` parameter and `grant-profile` URN convention even for the mandatory combination ({{related-idjag}}); if ID-JAG does not progress, a future revision may define an independent discovery parameter and registration.  Which coordination path the working group adopts remains open (an extension hook in ID-JAG, coordinated text in both drafts, or defining cross-client delegation within ID-JAG).
 
 Scope:
-: This revision retains the generic Token-Exchange-layer profile.  The mandatory-to-implement core is a signed OpenID Connect ID Token as `subject_token` with an {{RFC7523}} JWT client assertion as `actor_token`, producing a token that carries the Delegate as actor ({{request}}).  SAML 2.0 Identity Assertions, the client-metadata views ({{client-metadata}}), refresh tokens ({{issued-token}}), and output token types other than ID-JAG are OPTIONAL.  A leaner core is possible; whether to narrow to the mandatory combination alone is left to the working group.
+: This revision retains the generic Token-Exchange-layer profile.  The mandatory-to-implement core is a signed OpenID Connect ID Token as `subject_token` with an {{RFC7523}} JWT client assertion as `actor_token`, producing a JWT access token {{RFC9068}} that carries the Delegate as actor ({{request}}, {{issued-token}}).  SAML 2.0 Identity Assertions (which require a companion profile), the client-metadata views ({{client-metadata}}), refresh tokens ({{issued-token}}), and output token types other than a JWT access token (including ID-JAG) are OPTIONAL.  A leaner core is possible; whether to narrow to the mandatory combination alone is left to the working group.
 
 ## Open Questions for the Working Group {#open-questions}
 
