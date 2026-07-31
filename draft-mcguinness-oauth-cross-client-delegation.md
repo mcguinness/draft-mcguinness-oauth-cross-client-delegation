@@ -354,7 +354,7 @@ The Delegate MUST authenticate the Token Exchange request using a client authent
 
 The authenticated client and the actor are distinct protocol concepts.  This profile requires them to identify the same Delegate; see {{actor-token-requirements}}.
 
-An IdP that supports this profile MUST support the combination of an OpenID Connect ID Token as `subject_token` and an {{RFC7523}} JWT client assertion as `actor_token`.  An IdP MAY additionally support SAML 2.0 Identity Assertions and actor-credential combinations defined by companion specifications.
+An IdP that supports this profile MUST support the combination of an OpenID Connect ID Token as `subject_token` and an {{RFC7523}} JWT client assertion as `actor_token`.  This combination is the mandatory-to-implement core of the profile.  Everything else the document describes is OPTIONAL: SAML 2.0 Identity Assertions, actor-credential types defined by companion specifications, the client-metadata views of {{client-metadata}}, refresh tokens ({{issued-token}}), and output token types other than ID-JAG.  An implementation conforms by supporting the core; optional features are additive.
 
 ## Accepted ID Token Profile {#id-token-profile}
 
@@ -540,7 +540,7 @@ The Initiator MUST NOT be added as a nested prior actor solely because its clien
 
 As required by {{RFC8693}}, nested prior actors are informational and MUST NOT be used by token consumers for access-control decisions.
 
-Other claims are included according to the requested token type and applicable token profile.  When the IdP issues an opaque access token, its OAuth Token Introspection {{RFC7662}} response MUST include the `act` member with the same semantics, as permitted by {{RFC8693, Section 4.1}}, so that the actor context is available to the protected resource for token processing; if the opaque token is sender-constrained, the introspection response MUST also convey the corresponding `cnf` member.  The IdP MUST NOT issue a token under this profile when the selected token type and deployment cannot convey the current actor to the token consumer.
+Other claims are included according to the requested token type and applicable token profile.  When the IdP issues an opaque access token, its OAuth Token Introspection {{RFC7662}} response MUST include the `act` member with the same semantics, as permitted by {{RFC8693, Section 4.1}}, so that the actor context is available to the protected resource for token processing; if the opaque token is sender-constrained, the introspection response MUST also convey the corresponding `cnf` member.  The IdP MUST NOT issue a token under this profile when the selected token type and deployment cannot convey the current actor to the token consumer.  In particular, issuing a token type that has no defined representation for actor context (for example, a SAML 2.0 assertion, for which this document defines no `act` equivalent) is outside the base profile absent a companion profile that defines how the actor is conveyed.
 
 Where the requested token type and deployment support proof of possession, the issued token SHOULD be sender-constrained to a key controlled by the Delegate (for example, via mutual TLS certificate binding {{RFC8705}} or DPoP {{RFC9449}}), with the binding conveyed by the `cnf` claim {{RFC7800}}.  Sender constraining the issued token bounds the value of a stolen token and complements the captured-assertion controls in {{security-captured}}.
 
@@ -681,7 +681,7 @@ Neither a CCDR nor `may_act` by itself establishes that the End-User understood 
 
 ## Revocation and Previously Issued Tokens {#security-revocation}
 
-Revoking an Initiator, Delegate, or CCDR MUST prevent new tokens from being minted through this profile.  A CCDR change does not, by itself, invalidate tokens already issued.  Deployments that require immediate invalidation need an operational revocation mechanism, such as token revocation, introspection-backed tokens, or another deployment-specific control.  Otherwise, short `exp` values on issued tokens bound the residual authorization window.
+Revoking an Initiator, Delegate, or CCDR MUST prevent new tokens from being minted through this profile.  Redeeming a refresh token issued under this profile is minting through this profile for this purpose and is subject to the re-evaluation required by {{issued-token}}.  A CCDR change does not, by itself, invalidate tokens already issued.  Deployments that require immediate invalidation need an operational revocation mechanism, such as token revocation, introspection-backed tokens, or another deployment-specific control.  Otherwise, short `exp` values on issued tokens bound the residual authorization window.
 
 The same bounded window applies to `may_act`.  A `may_act` claim is evaluated when the exchange occurs.  If the named Delegate or its CCDR is later revoked, the status of tokens already minted depends on the deployment's revocation mechanism and the issued token's lifetime.
 
@@ -916,29 +916,39 @@ The CCDR-authorized relaxation applies only to the audience check on the Identit
 Client attestation ({{I-D.ietf-oauth-attestation-based-client-auth}}) can authenticate a particular Managed Client or Broker instance and prove possession of an instance key.  It complements rather than replaces the CCDR: attestation establishes instance authenticity, while the CCDR authorizes the cross-client relationship.
 
 
-# Open Items for Working Group Discussion {#open-items}
+# Design Decisions and Open Items {#open-items}
 
-1. **Per-assertion authorization.**  Should profiles built on OpenID Connect require `may_act`, or retain the CCDR-only mode for unchanged ID Tokens?
+## Positions Taken in This Revision {#design-decisions}
 
-2. **Authenticated handoff.**  What mechanism, if any, proves that the Initiator actively conveyed a particular assertion to the Delegate?  A related sub-question: does a `may_act` claim signed by the assertion's issuer represent sufficient authorization to record the Initiator as a nested prior actor in `act`, or does this document's strict requirement (Initiator-authenticated evidence) hold?
+The following positions are settled for this revision.  They are recorded here, rather than left as open questions, so implementers know what to build; the working group may revisit any of them.
 
-3. **Relationship exposure.**  Are the optional client-metadata views sufficient, or should an authenticated client be able to query its own CCDRs through a protected endpoint?
+Two conformant authorization modes:
+: This revision admits both relationship-only and assertion-bound delegation ({{authorization-model}}) as conformant, with assertion-bound RECOMMENDED and relationship-only the explicitly weaker mode subject to compensating controls.  It does not require `may_act` for OpenID Connect-based deployments.  Whether a future revision should require the assertion-bound mode is left open (see {{security-captured}} for the risk that motivates the question).
 
-4. **Actor credential types.**  Should the base profile remain limited to an {{RFC7523}} client assertion, with workload credentials and access tokens defined by companion profiles?
+Actor credential:
+: The base profile is limited to an {{RFC7523}} JWT client assertion as `actor_token` ({{actor-token}}).  Workload credentials and access tokens as actor credentials are deferred to companion profiles.
 
-5. **Consent surface.**  Under which deployment policies is administrative authorization sufficient, and when must the delegation be shown to the End-User?
+ID-JAG relationship:
+: This document declares its dependency on ID-JAG in prose ({{related-idjag}}) and does not assert a formal "Updates" relationship to it.  ID-JAG is an unpublished Internet-Draft, and the audience-check exception is best introduced by coordinated normative text in ID-JAG itself rather than by this document claiming to modify it.  The generic Token-Exchange-layer mechanism defined in the body does not depend on that coordination; only the ID-JAG composition does.  Which coordination path the working group adopts remains open (an extension hook in ID-JAG, coordinated text in both drafts, or defining cross-client delegation within ID-JAG).
 
-6. **Cross-organizational Delegates.**  How does the IdP recognize and namespace a Delegate controlled by another organization?
+Scope:
+: This revision retains the generic Token-Exchange-layer profile.  The mandatory-to-implement core is a signed OpenID Connect ID Token as `subject_token` with an {{RFC7523}} JWT client assertion as `actor_token`, producing a token that carries the Delegate as actor ({{request}}).  SAML 2.0 Identity Assertions, the client-metadata views ({{client-metadata}}), refresh tokens ({{issued-token}}), and output token types other than ID-JAG are OPTIONAL.  A leaner core is possible; whether to narrow to the mandatory combination alone is left to the working group.
 
-7. **Generic client relationships.**  If a broader client-relationships primitive emerges, how should the CCDR be represented within it?
+## Open Questions for the Working Group {#open-questions}
 
-8. **Multiple eligible Delegates per assertion.**  {{RFC8693}} defines `may_act` as a single JSON object, so an Identity Assertion can name only one eligible Delegate.  Is a per-assertion authorization for multiple Delegates needed, and if so, how should it be represented without changing {{RFC8693}} semantics?
+1. **Authenticated handoff.**  What mechanism, if any, proves that the Initiator actively conveyed a particular assertion to the Delegate?  A related sub-question: does a `may_act` claim signed by the assertion's issuer represent sufficient authorization to record the Initiator as a nested prior actor in `act`, or does this document's strict requirement (Initiator-authenticated evidence) hold?
 
-9. **ID-JAG extension hook (prerequisite for the ID-JAG composition).**  ID-JAG's Identity Assertion audience check is currently unconditional and offers no extension point for this exception, so this document cannot unilaterally introduce it (see {{related-idjag}}).  Which resolution should the working group adopt: an extension hook in ID-JAG, a formal "Updates" relationship with coordinated normative text in both drafts, or defining cross-client delegation within ID-JAG itself?  This is an architectural prerequisite for jointly implementing this profile with ID-JAG, not merely a discussion item.
+2. **Relationship exposure.**  Are the optional client-metadata views sufficient, or should an authenticated client be able to query its own CCDRs through a protected endpoint?
 
-10. **Mandatory assertion-bound delegation.**  Should a future revision require assertion-bound delegation ({{authorization-model}}) and demote relationship-only delegation to a clearly marked, weaker deployment option, or continue to admit both modes as conformant?
+3. **Consent surface.**  Under which deployment policies is administrative authorization sufficient, and when must the delegation be shown to the End-User?
 
-11. **Scope of the -00.**  Should the interoperable core be narrowed (for example, to signed OIDC ID Token input, a confidential Delegate, a single IdP, one actor model, and ID-JAG output, deferring SAML, client-relationship metadata, refresh tokens, and generic output tokens to later revisions) to reduce surface area while the authorization and identity models settle?
+4. **Cross-organizational Delegates.**  How does the IdP recognize and namespace a Delegate controlled by another organization?
+
+5. **Generic client relationships.**  If a broader client-relationships primitive emerges, how should the CCDR be represented within it?
+
+6. **Multiple eligible Delegates per assertion.**  {{RFC8693}} defines `may_act` as a single JSON object, so an Identity Assertion can name only one eligible Delegate.  Is a per-assertion authorization for multiple Delegates needed, and if so, how should it be represented without changing {{RFC8693}} semantics?
+
+7. **ID-JAG coordination path.**  Given the dependency recorded above, which mechanism should carry the audience-check exception: an extension hook added to ID-JAG, coordinated normative text in both drafts, or defining cross-client delegation within ID-JAG itself?
 
 
 # Acknowledgments
