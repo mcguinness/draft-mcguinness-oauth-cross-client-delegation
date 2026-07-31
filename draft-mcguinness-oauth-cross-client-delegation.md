@@ -81,7 +81,7 @@ informative:
     date: 2026-06-24
     target: https://openid.net/specs/openid-connect-key-binding-1_0.html
   Google.CrossClient:
-    title: "Google Identity: Cross-client Identity"
+    title: "Cross-client Identity"
     author:
       org: Google
     target: https://developers.google.com/identity/protocols/oauth2/cross-client-identity
@@ -359,7 +359,7 @@ For the mandatory-to-implement combination, an ID Token used as `subject_token`:
 
 *  MUST be a signed JWT that the IdP itself issued (`iss` equal to the IdP's issuer identifier), validated per {{OpenID.Core}} except for the audience-equals-requesting-client check, which is replaced as described in {{processing-steps}};
 
-*  MUST be signed with an asymmetric algorithm the IdP advertises in `id_token_signing_alg_values_supported`; the IdP MUST reject `alg` values of `none` and MUST apply the algorithm-verification guidance of {{RFC8725}}; and
+*  MUST be signed with an asymmetric algorithm that the IdP supports for ID Token signing; the IdP MUST reject a JOSE `alg` value of `none` and MUST apply the algorithm-verification guidance of {{RFC8725}}; and
 
 *  MUST NOT be an encrypted ID Token in the base profile.  An encrypted ID Token is encrypted to the registered client (typically the Initiator), and a Delegate normally lacks the decryption key; a deployment that needs encrypted assertions to reach the Delegate MUST define key handling in a companion profile and MUST NOT require the Initiator's private decryption key to be shared.
 
@@ -452,7 +452,7 @@ The IdP MUST apply the following processing to a Token Exchange request under th
 
 2. Determine exactly one Initiator using the assertion-type-specific rules and the IdP's issuer-scoped client-registration mapping:
 
-   * For an ID Token whose `aud` claim is a string or a single-element array, that audience value selects the Initiator.  If `azp` is present in this case, it MUST equal that audience value.  For an ID Token with multiple audience values, the `azp` claim MUST be present and its value selects the Initiator; the `azp` value MUST be one of the audience values.  The selected value MUST resolve to exactly one client registration at the IdP.  These rules deliberately tighten the OPTIONAL `azp` mechanism of {{OpenID.Core}} and repurpose it for Initiator selection at the token endpoint; the requirements are imposed by this profile, not by OpenID Connect.
+   * For an ID Token whose `aud` claim is a string or a single-element array, that audience value selects the Initiator.  If `azp` is present in this case, it MUST equal that audience value.  For an ID Token with multiple audience values, the `azp` claim MUST be present and its value selects the Initiator; the `azp` value MUST be one of the audience values.  The selected value MUST resolve to exactly one client registration at the IdP.  These requirements are imposed by this profile, not by {{OpenID.Core}}, which leaves `azp` OPTIONAL and defines neither a rule that `azp` be present for multiple audiences nor a rule that `azp` be one of the `aud` values.  This profile both tightens `azp` (requiring its presence in the multi-audience case) and adds the `azp`-in-`aud` constraint, and it repurposes `azp` for Initiator selection at the token endpoint.
 
    * For a SAML 2.0 assertion, the IdP MUST validate all applicable `AudienceRestriction` conditions and use its configured mapping from the intended SAML service-provider audience to exactly one Initiator client registration.  A SAML 2.0 assertion has no `azp` equivalent; when the assertion carries more than one `Audience` value and the configured mapping yields more than one candidate Initiator registration, the IdP MUST reject the assertion as ambiguous.
 
