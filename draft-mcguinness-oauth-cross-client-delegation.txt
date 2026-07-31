@@ -97,8 +97,9 @@ Table of Contents
      7.2.  JWT Client Assertion Actor Token
    8.  Per-Assertion Actor Authorization
    9.  Token Exchange Processing
-     9.1.  Processing Rules
-     9.2.  Errors
+     9.1.  Profile Selection
+     9.2.  Processing Rules
+     9.3.  Errors
    10. Issued Token
    11. Authorization Server Metadata
      11.1.  Initiator-Facing Discovery
@@ -211,11 +212,16 @@ Table of Contents
    This profile applies when a confidential client acts for an End-User
    using an Identity Assertion issued to a different client
    registration, and the authorization server administers a trust
-   relationship between those two registrations.  It composes with
-   token-specific profiles such as ID-JAG
-   [I-D.ietf-oauth-identity-assertion-authz-grant], which may impose
-   additional constraints on the requested token type, audience, or
-   claims.  Appendix A describes an informative deployment pattern
+   relationship between those two registrations.  The Initiator, the
+   Delegate, and the Identity Assertion are all administered by a single
+   authorization server (the IdP); cross-organizational and multi-IdP
+   delegation are out of scope (see Section 1.2 and Section 13.7).
+
+   This profile is intended to compose with token-specific profiles such
+   as ID-JAG [I-D.ietf-oauth-identity-assertion-authz-grant].  That
+   composition currently has an unresolved normative dependency on ID-
+   JAG and is not yet jointly implementable with unmodified ID-JAG; see
+   Section 12.3.  Appendix A describes an informative deployment pattern
    applying this profile to ID-JAG in an enterprise gateway topology.
 
 1.2.  Non-Goals
@@ -231,9 +237,12 @@ Table of Contents
       administered by a different organization is out of scope; see
       Section 13.7.
 
-   Authenticated handoff:  A mechanism proving that the Initiator
-      actively conveyed a particular Identity Assertion to the Delegate
-      is out of scope; see Section 13.3.
+   Standardizing an authenticated handoff mechanism:  This profile does
+      not define or standardize a mechanism that proves the Initiator
+      actively conveyed a particular Identity Assertion to the Delegate.
+      Such a mechanism is one way to achieve the assertion-bound mode of
+      Section 4; Appendix A.5 describes a non-normative approach.  See
+      also Section 13.3.
 
    End-User consent user experience:  How delegation is surfaced to the
       End-User (if at all) is a deployment concern subject to applicable
@@ -302,6 +311,13 @@ Table of Contents
       structured tenant-qualified client identifier, so identically
       named registrations under one issuer are not distinguishable on
       the wire and MUST NOT occur.
+
+   Effective relationship:  The currently active state of the CCDR for a
+      given (Initiator, Delegate) pair, including any constraints the
+      CCDR carries (such as permitted target audiences, resources, or
+      scopes; see Section 5).  References in this document to what the
+      effective relationship permits mean this active state, not merely
+      the existence of a pairing.
 
    Examples in this document are illustrative and focus on the claims
    and parameters relevant to cross-client delegation.  They may omit
@@ -429,9 +445,10 @@ Table of Contents
    audience, resource, scope, authorization_details) from three inputs,
    evaluated conjunctively: the administered CCDR (Section 5), the
    optional per-assertion may_act authorization (Section 8), and the
-   IdP's exchange-time policy (Section 13.5).  Every input that is
-   present must authorize the exchange; none broadens another.  A CCDR
-   is always required.
+   IdP's exchange-time policy (Section 13.5).  A CCDR and an exchange-
+   time policy evaluation are always required; may_act is the only
+   optional input.  Every input that is present must authorize the
+   exchange; none broadens another.
 
    The profile admits two delegation modes, distinguished by what binds
    the Delegate to the particular assertion being exchanged:
@@ -456,15 +473,17 @@ Table of Contents
       and is RECOMMENDED wherever the deployment can supply such an
       artifact.
 
-   Both modes are conformant.  Neither, by itself, establishes End-User
-   consent or per-request authorization by the End-User; see
-   Section 13.8.  A deployment MUST document which mode it operates and,
-   when it operates relationship-only delegation, MUST apply the
-   compensating controls in Section 13.3 (short assertion lifetimes,
-   replay controls, narrowly scoped CCDRs, and constrained downstream
-   grants).  This distinction is a per-deployment choice in this
-   revision; see Appendix B for the question of whether a future
-   revision should require assertion-bound delegation.
+   Both modes are conformant.  The mode that applies to a given exchange
+   is determined per request by whether an assertion-binding artifact is
+   present; a deployment SHOULD document which mode it intends to
+   operate.  Neither mode, by itself, establishes End-User consent or
+   per-request authorization by the End-User; see Section 13.8.  When an
+   exchange proceeds in the relationship-only mode, the compensating
+   controls of Section 13 apply: the IdP SHOULD enforce short assertion
+   lifetimes and replay controls (Section 13.3), narrowly scoped CCDRs
+   (Section 13.1), and constrained downstream authorization
+   (Section 13.5).  Whether a future revision should require the
+   assertion-bound mode is left open; see Appendix B.
 
 5.  Cross-Client Delegation Relationship
 
@@ -479,7 +498,7 @@ Table of Contents
    A CCDR MAY additionally carry, or reference, constraints that bound
    the exchanges it makes eligible, such as an allowlist of permitted
    target audiences, resources, or scopes.  When a CCDR carries such
-   constraints, the policy evaluation in step 7 of Section 9.1 MUST
+   constraints, the policy evaluation in step 7 of Section 9.2 MUST
    enforce them.  Whether or not a CCDR carries such constraints, that
    policy evaluation MUST be governed by an explicit, administratively
    configured policy for the specific (Initiator, Delegate) pair; the
@@ -495,18 +514,14 @@ Table of Contents
    user interface for CCDR management; that is a deployment concern.
 
    The authorization server MUST evaluate one consistent effective
-   relationship for each (Initiator, Delegate) pair.  If the metadata
-   views defined in Section 5.2 are exposed, they MUST reflect the same
-   effective relationship.
-
-   Consistent with the definition of client registration in Section 2,
-   the CCDR store and every client comparison in Section 9 operate on
-   client registrations identified by client_id values that are unique
-   within the applicable issuer namespace.  A multi-tenant issuer that
-   cannot guarantee that uniqueness MUST use a distinct issuer
-   identifier per partition, so that a CCDR, an Initiator resolution, or
-   an actor comparison in one partition cannot be satisfied by an
-   identically named registration in another.
+   relationship for each (Initiator, Delegate) pair, and the CCDR store
+   and every client comparison in Section 9 operate on client
+   registrations, per Section 2.  If the metadata views defined in
+   Section 5.2 are exposed, they MUST reflect that same effective
+   relationship, subject to any recipient-scoped filtering applied under
+   Section 14 (an empty or omitted view to a recipient not entitled to
+   see a relationship is such filtering, not a statement that no
+   relationship exists).
 
    The relationship MAY be maintained purely in IdP-side configuration.
    This profile does not define public discovery of the relationship
@@ -599,12 +614,11 @@ Table of Contents
    *  MUST be a signed JWT that the IdP itself issued (iss equal to the
       IdP's issuer identifier), validated per [OpenID.Core] except for
       the audience-equals-requesting-client check, which is replaced as
-      described in Section 9.1;
+      described in Section 9.2;
 
    *  MUST be signed with an asymmetric algorithm that the IdP supports
       for ID Token signing; the IdP MUST reject a JOSE alg value of none
       and MUST apply the algorithm-verification guidance of [RFC8725];
-      and
 
    *  MUST NOT be an encrypted ID Token in the base profile.  An
       encrypted ID Token is encrypted to the registered client
@@ -612,11 +626,21 @@ Table of Contents
       decryption key; a deployment that needs encrypted assertions to
       reach the Delegate MUST define key handling in a companion profile
       and MUST NOT require the Initiator's private decryption key to be
-      shared.
+      shared; and
+
+   *  MUST NOT be a sender-constrained or proof-of-possession-bound ID
+      Token (for example, one bound to the Initiator's key via OpenID
+      Connect Key Binding [OpenID.KeyBinding] or DPoP [RFC9449]) in the
+      base profile.  The Delegate cannot demonstrate possession of the
+      Initiator's key, so full unrelaxed validation of such an assertion
+      (which Section 9.2 step 1 requires) cannot succeed.  A deployment
+      combining key binding with this profile MUST define a presenter-
+      transition mechanism in a companion profile, as required by
+      Section 13.3; see also Section 12.4.
 
    Because [OpenID.Core] defines no ID-Token-specific typ JOSE header,
    the IdP separates ID Tokens from other JWT types it issues as
-   described in Section 9.1 (from the other types' explicit markers and
+   described in Section 9.2 (from the other types' explicit markers and
    from issuance context), not by requiring a distinguishing typ on the
    ID Token itself.
 
@@ -723,6 +747,12 @@ Table of Contents
    claim as defined in [RFC8693], Section 4.4.  This document does not
    define an equivalent field for non-JWT Identity Assertions.
 
+   How and when the IdP populates may_act in an Identity Assertion is an
+   IdP-side, authorization-time decision (for example, driven by CCDR
+   configuration, an End-User authorization step, or a request from the
+   Initiator) and is out of scope for this profile, which specifies only
+   how a may_act claim, once present, is processed at Token Exchange.
+
    When present, may_act:
 
    *  identifies a party eligible to become the actor for the subject of
@@ -753,7 +783,7 @@ Table of Contents
    Delegate's client_id, unless an applicable companion profile defines
    a different actor-identifier mapping.  A companion profile that
    defines a different actor-identifier mapping MUST also define how the
-   equality comparison in step 6 of Section 9.1 is performed under that
+   equality comparison in step 6 of Section 9.2 is performed under that
    mapping and MUST ensure that mapped identifiers do not collide across
    namespaces.  The IdP MUST NOT authorize a different Delegate merely
    because that Delegate is eligible under the CCDR.  A may_act mismatch
@@ -770,10 +800,40 @@ Table of Contents
 
 9.  Token Exchange Processing
 
-9.1.  Processing Rules
+9.1.  Profile Selection
+
+   A Token Exchange request under this profile is a request to the token
+   endpoint with the parameters of Section 6.  This profile defines no
+   request parameter that names itself; the profile is selected by the
+   request's content rather than by an explicit flag.  Specifically, the
+   IdP first authenticates the requesting client and resolves the
+   Initiator from the subject_token as in step 2 of Section 9.2, then:
+
+   *  If the resolved Initiator is the same client registration as the
+      authenticated client, the request is not a cross-client
+      delegation.  This profile does not apply; the request is a same-
+      client exchange governed by base [RFC8693] and the applicable
+      token profile (under which the assertion's audience already
+      matches the requesting client).
+
+   *  If the resolved Initiator is a different client registration from
+      the authenticated client, the request is a cross-client delegation
+      and this profile governs.  The IdP MUST then apply the processing
+      in Section 9.2 in full, including the CCDR, actor-token, and
+      may_act checks.  In particular, the IdP MUST NOT treat the
+      authenticated client's membership in a multi-valued aud claim of
+      the subject_token as satisfying the base audience requirement, and
+      MUST NOT issue a token on that basis while skipping this profile's
+      checks; the Initiator resolved in step 2 (via azp for a multi-
+      valued aud) is authoritative.
+
+   An IdP that receives a request it cannot process under either the
+   base profile or this profile MUST return an error per Section 9.3.
+
+9.2.  Processing Rules
 
    The IdP MUST apply the following processing to a Token Exchange
-   request under this profile:
+   request that this profile governs:
 
    1.  Validate the subject_token signature, issuer, temporal validity,
        and all other requirements applicable to its Identity Assertion
@@ -845,14 +905,10 @@ Table of Contents
        The IdP MUST reject an assertion when the Initiator cannot be
        determined unambiguously.  If the resolved Initiator is the same
        client registration as the client authenticated for the request,
-       the request is not a cross-client delegation: the assertion's
-       audience already matches the requesting client, so this profile's
-       audience exception does not apply and MUST NOT be invoked.  For a
-       request submitted as this profile (advertising the profile's
-       grant profile identifier or otherwise selecting cross-client
-       processing), the IdP MUST reject the same-registration case with
-       invalid_request; a client seeking a same-client exchange uses the
-       applicable base token profile directly rather than this profile.
+       this profile does not govern the exchange, per Section 9.1; the
+       IdP processes it under base [RFC8693] and the applicable token
+       profile and MUST NOT apply this profile's audience exception to
+       it.
 
    3.  Validate actor_token according to its token type and determine
        the actor identity, per Section 7.
@@ -878,9 +934,9 @@ Table of Contents
 
    8.  On success, issue the requested token according to Section 10.
 
-9.2.  Errors
+9.3.  Errors
 
-   If any step in Section 9.1 fails, the IdP MUST return an error
+   If any step in Section 9.2 fails, the IdP MUST return an error
    response as specified in [RFC6749], Section 5.2 and [RFC8693],
    Section 2.2.2:
 
@@ -895,6 +951,12 @@ Table of Contents
    *  A request whose audience or resource is unacceptable SHOULD use
       the invalid_target error code per [RFC8693].
 
+   When one JWT value is presented in both client_assertion and
+   actor_token (Section 7.2) and a single defect fails it in both roles
+   (for example, a bad signature or expiry), the IdP MUST report
+   invalid_client; client authentication takes priority over actor-token
+   validation for error classification.
+
    An invalid_target response can indicate that the presented tokens and
    the (Initiator, Delegate) relationship were otherwise acceptable,
    since a target is only assessed for a request that could otherwise
@@ -904,7 +966,7 @@ Table of Contents
    target failures rather than distinguishing them, accepting the
    reduced target diagnostics as the cost of not disclosing the
    relationship.  This document does not otherwise constrain the order
-   in which an IdP evaluates the checks in Section 9.1; the ordering
+   in which an IdP evaluates the checks in Section 9.2; the ordering
    there is written for exposition.
 
    Error responses for actor-token validation and may_act or CCDR
@@ -1003,7 +1065,7 @@ Table of Contents
    Initiator and CCDR context.  On each use of the refresh token, the
    IdP MUST re-evaluate the current status of the Delegate, Initiator,
    and CCDR and MUST re-apply the policy evaluation of step 7 of
-   Section 9.1.  The audiences, resources, scope, and
+   Section 9.2.  The audiences, resources, scope, and
    authorization_details obtainable through the refresh token MUST NOT
    exceed the recorded original grant, and MUST be further reduced when
    current policy or the effective relationship is narrower.  Revoking
@@ -1082,13 +1144,9 @@ Table of Contents
    This profile uses may_act without changing its [RFC8693] semantics.
    may_act is an input authorization statement identifying an eligible
    actor; actor_token proves the proposed actor's identity; and act
-   records the actor accepted into the output token.
-
-   The CCDR is required for every exchange under this profile, whether
-   or not the subject token carries may_act.  When may_act is present,
-   both the CCDR and may_act must authorize the Delegate; may_act
-   narrows the administered relationship and is never a substitute for
-   it.  See Section 13.2.
+   records the actor accepted into the output token.  The conjunctive
+   relationship between the CCDR and may_act is specified in Section 4
+   and Section 13.2.
 
 12.2.  OpenID Connect Cross-Client Identity
 
@@ -1142,12 +1200,12 @@ Table of Contents
    The mechanism specified by OpenID Connect Key Binding
    [OpenID.KeyBinding] can bind an Identity Assertion to the Initiator's
    key, but that binding alone is not resolved by this profile: without
-   a presenter-continuation or key-transition mechanism, the Delegate
-   cannot demonstrate proof of possession for such an assertion.
-   Deployments requiring both key binding and cross-client delegation
-   need to define the presenter-transition mechanism via a companion
-   profile.  This remains an open problem across the delegation space
-   and is not unique to this profile.
+   a presenter-transition mechanism, the Delegate cannot demonstrate
+   proof of possession for such an assertion.  Deployments requiring
+   both key binding and cross-client delegation need to define that
+   presenter-transition mechanism via a companion profile.  This remains
+   an open problem across the delegation space and is not unique to this
+   profile.
 
 12.5.  OAuth Actor Profile for Delegation
 
@@ -1316,7 +1374,7 @@ Table of Contents
    which may itself be sensitive (for example, disclosing an
    organization's internal gateway topology or vendor relationships).
    This profile does not define public discovery of the relationship
-   graph, and Section 9.2 requires that error responses not enumerate
+   graph, and Section 9.3 requires that error responses not enumerate
    it.  The client metadata views defined in Section 5.2, when exposed
    at all, SHOULD be restricted to the affected clients and
    administrative principals.
@@ -1748,7 +1806,7 @@ A.4.  Trust Model
 
    Within the single-IdP scope of this pattern, the IdP re-checks the
    current status of the Managed Client, the Broker, and their CCDR at
-   each mint, per Section 13.9.  Short exp values on issued tokens bound
+   each mint, per Section 13.5.  Short exp values on issued tokens bound
    the residual window when the deployment does not provide immediate
    revocation of already-issued tokens.
 
