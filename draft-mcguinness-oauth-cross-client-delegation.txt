@@ -1110,9 +1110,14 @@ Table of Contents
    MUST NOT be used by token consumers for access-control decisions.
 
    Other claims are included according to the requested token type and
-   applicable token profile.  When the IdP issues an opaque access
-   token, its OAuth Token Introspection [RFC7662] response MUST include
-   the act member with the same semantics, as permitted by [RFC8693],
+   applicable token profile.  The IdP MUST NOT copy identity claims from
+   the Identity Assertion into the issued token beyond those permitted
+   for the target audience under policy.  The issued token carries the
+   actor context and the authorization claims appropriate to its type;
+   it is not a vehicle for re-disclosing the Initiator-audience claim
+   set to the target.  When the IdP issues an opaque access token, its
+   OAuth Token Introspection [RFC7662] response MUST include the act
+   member with the same semantics, as permitted by [RFC8693],
    Section 4.1, so that the actor context is available to the protected
    resource for token processing; if the opaque token is sender-
    constrained, the introspection response MUST also convey the
@@ -1287,8 +1292,14 @@ Table of Contents
    [OpenID.KeyBinding] can bind an Identity Assertion to the Initiator's
    key, but that binding alone is not resolved by this profile: without
    a presenter-transition mechanism, the Delegate cannot demonstrate
-   proof of possession for such an assertion.  Deployments requiring
-   both key binding and cross-client delegation need to define that
+   proof of possession for such an assertion.  The difficulty is
+   specific to cross-client delegation.  Because the Delegate is a
+   distinct party that does not hold the Initiator's key, proof of
+   possession cannot simply continue across the exchange as it can when
+   the presenter holds the bound key throughout; it would have to be
+   transferred or re-established from the Initiator to the Delegate,
+   which key binding alone does not provide.  Deployments requiring both
+   key binding and cross-client delegation need to define that
    presenter-transition mechanism via a companion profile.  This remains
    an open problem across the delegation space and is not unique to this
    profile.
