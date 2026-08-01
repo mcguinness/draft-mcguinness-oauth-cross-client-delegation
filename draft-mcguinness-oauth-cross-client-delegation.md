@@ -69,6 +69,14 @@ informative:
   I-D.ietf-oauth-attestation-based-client-auth:
   I-D.ietf-oauth-rfc7523bis:
   I-D.mcguinness-oauth-actor-profile:
+  I-D.mcguinness-oauth-presenter-delegation:
+    title: "Presenter Delegation for OAuth 2.0 Proof-of-Possession Tokens"
+    author:
+     -
+        fullname: Karl McGuinness
+        organization: Independent
+    date: 2026
+    target: https://datatracker.ietf.org/doc/html/draft-mcguinness-oauth-presenter-delegation
   OpenID.KeyBinding:
     title: "OpenID Connect Key Binding 1.0 - draft 02"
     author:
@@ -380,7 +388,7 @@ An ID Token used as `subject_token` in the mandatory-to-implement combination is
 
 The ID Token additionally MUST NOT be encrypted in the base profile: an encrypted ID Token is encrypted to the registered client (typically the Initiator), and a Delegate normally lacks the decryption key; a deployment that needs encrypted assertions to reach the Delegate MUST define key handling in a companion profile and MUST NOT require the Initiator's private decryption key to be shared.
 
-The ID Token additionally MUST NOT be a sender-constrained or proof-of-possession-bound ID Token (for example, one bound to the Initiator's key via OpenID Connect Key Binding {{OpenID.KeyBinding}}) in the base profile.  The Delegate cannot demonstrate possession of the Initiator's key, so full unrelaxed validation of such an assertion cannot succeed.  A deployment combining key binding with this profile MUST define a presenter-transition mechanism in a companion profile, as required by {{security-captured}}; see also {{related-key-binding}}.  (Note that DPoP {{RFC9449}} binds OAuth access and refresh tokens, not ID Tokens, so it is not a mechanism for binding an ID Token used here; DPoP remains applicable to the access token issued as output and to a Broker-audience access token in {{appendix-broker}}.)
+The ID Token additionally MUST NOT be a sender-constrained or proof-of-possession-bound ID Token (for example, one bound to the Initiator's key via OpenID Connect Key Binding {{OpenID.KeyBinding}}) in the base profile.  The Delegate cannot demonstrate possession of the Initiator's key, so full unrelaxed validation of such an assertion cannot succeed.  A deployment combining key binding with this profile MUST use a presenter-transition mechanism, such as Presenter Delegation {{I-D.mcguinness-oauth-presenter-delegation}}, as required by {{security-captured}}; see also {{related-key-binding}}.  (Note that DPoP {{RFC9449}} binds OAuth access and refresh tokens, not ID Tokens, so it is not a mechanism for binding an ID Token used here; DPoP remains applicable to the access token issued as output and to a Broker-audience access token in {{appendix-broker}}.)
 
 Because {{OpenID.Core}} defines no ID-Token-specific `typ` JOSE header, the IdP separates ID Tokens from other JWT types it issues as described in {{processing-steps}} (from the other types' explicit markers and from issuance context), not by requiring a distinguishing `typ` on the ID Token itself.
 
@@ -630,7 +638,9 @@ The Initiator is not automatically a nested actor.  Recording it as a prior acto
 
 ## OpenID Connect Key Binding {#related-key-binding}
 
-The mechanism specified by OpenID Connect Key Binding {{OpenID.KeyBinding}} can bind an Identity Assertion to the Initiator's key, but that binding alone is not resolved by this profile: without a presenter-transition mechanism, the Delegate cannot demonstrate proof of possession for such an assertion.  The difficulty is specific to cross-client delegation.  Because the Delegate is a distinct party that does not hold the Initiator's key, proof of possession cannot simply continue across the exchange as it can when the presenter holds the bound key throughout; it would have to be transferred or re-established from the Initiator to the Delegate, which key binding alone does not provide.  Deployments requiring both key binding and cross-client delegation need to define that presenter-transition mechanism via a companion profile.  This remains an open problem across the delegation space and is not unique to this profile.
+The mechanism specified by OpenID Connect Key Binding {{OpenID.KeyBinding}} can bind an Identity Assertion to the Initiator's key, but that binding alone is not resolved by this profile: without a presenter-transition mechanism, the Delegate cannot demonstrate proof of possession for such an assertion.  The difficulty is specific to cross-client delegation.  Because the Delegate is a distinct party that does not hold the Initiator's key, proof of possession cannot simply continue across the exchange as it can when the presenter holds the bound key throughout; it would have to be transferred or re-established from the Initiator to the Delegate, which key binding alone does not provide.
+
+Presenter Delegation {{I-D.mcguinness-oauth-presenter-delegation}} provides that transfer: the Initiator, holding the key bound in the Identity Assertion's `cnf` claim, signs an attenuated delegation to the Delegate's key, and the IdP validates the chain from the assertion's confirmation key to the key the Delegate proves possession of.  A deployment that combines key binding with this profile MAY use Presenter Delegation as the presenter-transition mechanism; its delegation chain is also an IdP-verifiable per-assertion artifact and an authenticated handoff, and so raises the exchange to the assertion-bound operation of {{authorization-model}}.  This composition is described in {{I-D.mcguinness-oauth-presenter-delegation}} rather than here.
 
 ## OAuth Actor Profile for Delegation {#related-actor-profile}
 
