@@ -686,13 +686,13 @@ Table of Contents
    in the base profile.  The Delegate cannot demonstrate possession of
    the Initiator's key, so full unrelaxed validation of such an
    assertion cannot succeed.  A deployment combining key binding with
-   this profile MUST define a presenter-transition mechanism in a
-   companion profile, as required by Section 13.3; see also
-   Section 12.4.  (Note that DPoP [RFC9449] binds OAuth access and
-   refresh tokens, not ID Tokens, so it is not a mechanism for binding
-   an ID Token used here; DPoP remains applicable to the access token
-   issued as output and to a Broker-audience access token in
-   Appendix A.)
+   this profile MUST use a presenter-transition mechanism, such as
+   Presenter Delegation [I-D.mcguinness-oauth-presenter-delegation], as
+   required by Section 13.3; see also Section 12.4.  (Note that DPoP
+   [RFC9449] binds OAuth access and refresh tokens, not ID Tokens, so it
+   is not a mechanism for binding an ID Token used here; DPoP remains
+   applicable to the access token issued as output and to a Broker-
+   audience access token in Appendix A.)
 
    Because [OpenID.Core] defines no ID-Token-specific typ JOSE header,
    the IdP separates ID Tokens from other JWT types it issues as
@@ -1298,11 +1298,20 @@ Table of Contents
    possession cannot simply continue across the exchange as it can when
    the presenter holds the bound key throughout; it would have to be
    transferred or re-established from the Initiator to the Delegate,
-   which key binding alone does not provide.  Deployments requiring both
-   key binding and cross-client delegation need to define that
-   presenter-transition mechanism via a companion profile.  This remains
-   an open problem across the delegation space and is not unique to this
-   profile.
+   which key binding alone does not provide.
+
+   Presenter Delegation [I-D.mcguinness-oauth-presenter-delegation]
+   provides that transfer: the Initiator, holding the key bound in the
+   Identity Assertion's cnf claim, signs an attenuated delegation to the
+   Delegate's key, and the IdP validates the chain from the assertion's
+   confirmation key to the key the Delegate proves possession of.  A
+   deployment that combines key binding with this profile MAY use
+   Presenter Delegation as the presenter-transition mechanism; its
+   delegation chain is also an IdP-verifiable per-assertion artifact and
+   an authenticated handoff, and so raises the exchange to the
+   assertion-bound operation of Section 4.  This composition is
+   described in [I-D.mcguinness-oauth-presenter-delegation] rather than
+   here.
 
 12.5.  OAuth Actor Profile for Delegation
 
@@ -1697,6 +1706,12 @@ Table of Contents
               profile-00, 30 April 2026,
               <https://datatracker.ietf.org/doc/html/draft-mcguinness-
               oauth-actor-profile-00>.
+
+   [I-D.mcguinness-oauth-presenter-delegation]
+              McGuinness, K., "Presenter Delegation for OAuth 2.0 Proof-
+              of-Possession Tokens", 2026,
+              <https://datatracker.ietf.org/doc/html/draft-mcguinness-
+              oauth-presenter-delegation>.
 
    [OpenID.KeyBinding]
               Hardt, D. and E. Heilman, "OpenID Connect Key Binding 1.0
