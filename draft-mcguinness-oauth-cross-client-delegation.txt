@@ -4,8 +4,8 @@
 
 Web Authorization Protocol                                 K. McGuinness
 Internet-Draft                                               Independent
-Intended status: Standards Track                            31 July 2026
-Expires: 1 February 2027
+Intended status: Standards Track                           1 August 2026
+Expires: 2 February 2027
 
 
       Cross-Client Delegation Profile for OAuth 2.0 Token Exchange
@@ -24,8 +24,8 @@ Abstract
    acting party with an actor token, and authenticates as itself.  The
    authorization server validates the administered relationship,
    enforces any may_act constraint carried by the assertion, evaluates
-   current policy, and issues a token whose act claim identifies the
-   Delegate as the current actor.
+   policy at exchange time, and issues a token whose act claim
+   identifies the Delegate as the current actor.
 
 About This Document
 
@@ -62,7 +62,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 1 February 2027.
+   This Internet-Draft will expire on 2 February 2027.
 
 Copyright Notice
 
@@ -283,8 +283,8 @@ Table of Contents
       expressed by an [RFC8693] may_act claim in an Identity Assertion.
       It identifies an actor eligible to act on behalf of the subject of
       that assertion.  It narrows, and does not expand, the actors
-      permitted by the CCDR and current authorization server policy.
-      See Section 8.
+      permitted by the CCDR and the IdP's exchange-time policy.  See
+      Section 8.
 
    Identity Assertion:  A security token issued by the IdP that conveys
       claims about the End-User, identifies the Initiator as an intended
@@ -359,7 +359,7 @@ Table of Contents
        it identifies the same Delegate established by actor_token.  A
        mismatch is fatal; the CCDR MUST NOT override or broaden may_act.
 
-   6.  The IdP evaluates current policy over the tuple (End-User,
+   6.  The IdP evaluates exchange-time policy over the tuple (End-User,
        Initiator, Delegate, requested audiences, resources, scope,
        authorization details).
 
@@ -819,19 +819,15 @@ Table of Contents
 
    *  MUST identify the same party established by actor_token; and
 
-   *  narrows the CCDR and current IdP policy rather than expanding
+   *  narrows the CCDR and exchange-time policy rather than expanding
       them.
 
-   For example:
+   For example, within an Identity Assertion for user-123 audienced to
+   initiator-client (as shown in Section 3.1):
 
-   {
+   "may_act": {
      "iss": "https://idp.example",
-     "sub": "user-123",
-     "aud": "initiator-client",
-     "may_act": {
-       "iss": "https://idp.example",
-       "sub": "delegate-client"
-     }
+     "sub": "delegate-client"
    }
 
    For the single-IdP deployment defined by this profile, may_act.iss
@@ -846,8 +842,8 @@ Table of Contents
    MUST cause the exchange to fail.
 
    Absence of may_act does not by itself prohibit the exchange.  In that
-   case, the IdP uses the CCDR and current policy to decide whether the
-   authenticated Delegate may become the actor.
+   case, the IdP uses the CCDR and exchange-time policy to decide
+   whether the authenticated Delegate may become the actor.
 
    A may_act claim issued by the IdP represents authorization by the IdP
    for the named actor to act on behalf of the assertion subject.  It
@@ -1002,12 +998,12 @@ Table of Contents
        or use the CCDR to broaden the assertion's per-token
        authorization.
 
-   7.  Evaluate current policy over the tuple (End-User, Initiator,
-       Delegate, requested audiences, resources, scope, authorization
-       details) according to IdP configuration.  The IdP MUST NOT treat
-       successful End-User authentication or the existence of a CCDR as
-       authorization for arbitrary target audiences, resources, scopes,
-       or authorization details.
+   7.  Evaluate exchange-time policy over the tuple (End-User,
+       Initiator, Delegate, requested audiences, resources, scope,
+       authorization details) according to IdP configuration.  The IdP
+       MUST NOT treat successful End-User authentication or the
+       existence of a CCDR as authorization for arbitrary target
+       audiences, resources, scopes, or authorization details.
 
    8.  On success, issue the requested token according to Section 10.
 
@@ -1156,9 +1152,10 @@ Table of Contents
    Section 9.2.  The audiences, resources, scope, and
    authorization_details obtainable through the refresh token MUST NOT
    exceed the recorded original grant, and MUST be further reduced when
-   current policy or the effective relationship is narrower.  Revoking
-   or narrowing the CCDR MUST prevent the refresh token from obtaining
-   authorization no longer permitted by the effective relationship.
+   exchange-time policy or the effective relationship is narrower.
+   Revoking or narrowing the CCDR MUST prevent the refresh token from
+   obtaining authorization no longer permitted by the effective
+   relationship.
 
 11.  Authorization Server Metadata
 
@@ -1252,32 +1249,30 @@ Table of Contents
 
    This composition has an unresolved normative dependency.  ID-JAG
    currently requires, without exception, that the Identity Assertion's
-   audience match the client_id of the client authenticating the Token
-   Exchange request, and its extension points do not today provide a
-   hook for a profile such as this one to introduce that exception.  As
-   a result, an implementation cannot presently satisfy both this
-   profile and unmodified ID-JAG at the same time.  This document does
-   not, by itself, have the authority to override ID-JAG's requirement.
-   Closing this gap requires one of: an extension hook added to ID-JAG;
-   a coordinated update in which this document formally updates ID-JAG
-   (for example, via an "Updates" relationship) with matching normative
-   text in both drafts; or defining cross-client delegation within ID-
-   JAG itself.  This is a normative prerequisite for the ID-JAG
-   composition, tracked as open question 7 in Appendix B; until it is
-   resolved, the ID-JAG composition and the Enterprise Broker pattern of
-   Appendix A are illustrative of the intended end state rather than
-   jointly implementable with unmodified ID-JAG.  The mandatory-to-
-   implement combination of this profile (Section 6), which issues a JWT
-   access token, does not depend on that resolution and is implementable
-   today.  This document does, however, reuse two ID-JAG-defined
-   discovery and registration conventions even for the mandatory
-   combination: the authorization_grant_profiles_supported metadata
-   parameter (Section 11) and the urn:ietf:params:oauth:grant-profile:
-   value convention (Section 15).  That is a dependency of this
-   profile's discovery and IANA model, distinct from the audience-
-   resolution dependency above; if ID-JAG does not progress, a future
-   revision of this document may need to define an independent discovery
-   parameter and grant-profile registration.
+   audience match the client_id of the authenticating client, and
+   provides no extension hook for this profile to introduce an
+   exception.  An implementation therefore cannot presently satisfy both
+   this profile and unmodified ID-JAG, and this document has no
+   authority to override ID-JAG's requirement.  Closing the gap requires
+   one of: an extension hook in ID-JAG; a coordinated update in which
+   this document formally updates ID-JAG (for example, via an "Updates"
+   relationship) with matching text in both drafts; or defining cross-
+   client delegation within ID-JAG.  This prerequisite is tracked as
+   open question 7 in Appendix B; until it is resolved, the ID-JAG
+   composition and the Enterprise Broker pattern of Appendix A
+   illustrate the intended end state rather than being jointly
+   implementable with unmodified ID-JAG.
+
+   The mandatory-to-implement combination (Section 6), which issues a
+   JWT access token, does not depend on that resolution and is
+   implementable today.  It does, however, reuse two ID-JAG-defined
+   conventions even for the mandatory combination: the
+   authorization_grant_profiles_supported metadata parameter
+   (Section 11) and the urn:ietf:params:oauth:grant-profile: value
+   convention (Section 15).  This discovery-and-registration dependency
+   is distinct from the audience-resolution dependency above; if ID-JAG
+   does not progress, a future revision may define an independent
+   discovery parameter and grant-profile registration.
 
    The Initiator is not automatically a nested actor.  Recording it as a
    prior actor requires an additional authenticated handoff mechanism as
@@ -1373,7 +1368,7 @@ Table of Contents
    Where Identity Assertions include may_act, compromise impact is
    limited to assertions that name the compromised Delegate, but
    existing assertions remain usable until they expire, are revoked, or
-   are rejected by current IdP policy.
+   are rejected by exchange-time policy.
 
 13.5.  Exchange-Time Policy Freshness
 
@@ -1828,9 +1823,9 @@ A.3.  Flow
        appropriate for the target protected resource.
 
    4.  The IdP validates the CCDR, confirms may_act if present,
-       evaluates current policy, resolves the Broker's client identifier
-       at the target Resource Authorization Server, and issues an ID-JAG
-       with act identifying the Broker.
+       evaluates exchange-time policy, resolves the Broker's client
+       identifier at the target Resource Authorization Server, and
+       issues an ID-JAG with act identifying the Broker.
 
    5.  The Broker presents the ID-JAG at the target Resource
        Authorization Server per base ID-JAG, authenticating under the
