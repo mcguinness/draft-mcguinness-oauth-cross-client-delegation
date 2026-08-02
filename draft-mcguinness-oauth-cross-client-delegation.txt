@@ -4,8 +4,8 @@
 
 Web Authorization Protocol                                 K. McGuinness
 Internet-Draft                                               Independent
-Intended status: Standards Track                           1 August 2026
-Expires: 2 February 2027
+Intended status: Standards Track                           2 August 2026
+Expires: 3 February 2027
 
 
       Cross-Client Delegation Profile for OAuth 2.0 Token Exchange
@@ -62,7 +62,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 2 February 2027.
+   This Internet-Draft will expire on 3 February 2027.
 
 Copyright Notice
 
@@ -108,7 +108,8 @@ Table of Contents
      12.2.  OpenID Connect Cross-Client Identity
      12.3.  Identity Assertion JWT Authorization Grant (ID-JAG)
      12.4.  OpenID Connect Key Binding
-     12.5.  OAuth Actor Profile for Delegation
+     12.5.  Composition with Presenter Delegation
+     12.6.  OAuth Actor Profile for Delegation
    13. Security Considerations
      13.1.  Trust Anchor for the Relationship
      13.2.  CCDR and may_act Are Conjunctive
@@ -471,14 +472,19 @@ Table of Contents
 
    Handoff assurance:  Whether the Initiator's conveyance of the
       assertion to the Delegate was authenticated and correlated (see
-      Appendix A.5) or was uncorrelated bearer forwarding.  This is a
-      deployment property enforced at the Delegate, not at the IdP:
-      nothing representing an authenticated handoff is necessarily
-      present in the Token Exchange request, so the IdP cannot determine
-      it per request, and a compromised Delegate could omit the
-      correlation while sending an otherwise identical request.
-      Deployments relying on captured-assertion resistance MUST NOT
-      assume the IdP enforces handoff assurance.
+      Appendix A.5) or was uncorrelated bearer forwarding.  In the base
+      profile this is a deployment property enforced at the Delegate,
+      not at the IdP: nothing representing an authenticated handoff is
+      necessarily present in the Token Exchange request, so the IdP
+      cannot determine it per request, and a compromised Delegate could
+      omit the correlation while sending an otherwise identical request.
+      Deployments relying on captured-assertion resistance in the base
+      profile MUST NOT assume the IdP enforces handoff assurance.  The
+      exception is a cryptographic presenter-transition mechanism such
+      as Presenter Delegation (Section 12.5): its chain is an
+      authenticated handoff that is carried in the request and
+      verifiable by the IdP, which moves handoff assurance into the
+      token-endpoint authorization property above.
 
    CCDR-only, uncorrelated-bearer operation is the weakest combination
    and carries the captured-assertion risk of Section 13.3; it is a
@@ -1309,11 +1315,71 @@ Table of Contents
    Presenter Delegation as the presenter-transition mechanism; its
    delegation chain is also an IdP-verifiable per-assertion artifact and
    an authenticated handoff, and so raises the exchange to the
-   assertion-bound operation of Section 4.  This composition is
-   described in [I-D.mcguinness-oauth-presenter-delegation] rather than
-   here.
+   assertion-bound operation of Section 4.  Section 12.5 defines the
+   normative binding between the two documents.
 
-12.5.  OAuth Actor Profile for Delegation
+12.5.  Composition with Presenter Delegation
+
+   A deployment MAY compose this profile with Presenter Delegation
+   [I-D.mcguinness-oauth-presenter-delegation] to accept a key-bound
+   Identity Assertion, which the base profile excludes (Section 6.1).
+   When it does, this section supplies the profile-specific definitions
+   that [I-D.mcguinness-oauth-presenter-delegation] requires a consuming
+   profile to provide.  This profile opts in to presenter delegation
+   only for a key-bound Identity Assertion presented at Token Exchange
+   under this profile; the IdP MUST NOT accept a Presenter Delegation
+   Assertion (PDA) for any other purpose.  The CCDR-authorized audience
+   exception of Section 9 continues to apply unchanged: the Delegate is
+   still not the assertion's audience, the CCDR still authorizes the
+   pairing, and Presenter Delegation additionally continues proof of
+   possession from the Initiator's key to the Delegate's.
+
+   Verifier and proof of possession:  The Verifier is the IdP.  Every
+      PDA's aud MUST contain the IdP's issuer identifier.  The accepted
+      proof-of-possession method is DPoP [RFC9449]: the Delegate MUST
+      present a DPoP proof of the outermost Recipient key on the Token
+      Exchange request.
+
+   Confirmation-key reduction:  The Source Token is the Initiator's key-
+      bound Identity Assertion.  Its confirmation key is reduced to a
+      JWK SHA-256 Thumbprint as specified in
+      [I-D.mcguinness-oauth-presenter-delegation].  For an assertion
+      key-bound per OpenID Connect Key Binding [OpenID.KeyBinding],
+      whose cnf carries a jwk, that thumbprint is the JWK SHA-256
+      Thumbprint of the jwk.
+
+   Party identity:  Presenter Delegation roots the chain in the Source
+      Token's confirmation key
+      ([I-D.mcguinness-oauth-presenter-delegation]), and step 2 of
+      Section 9.2 resolves that assertion to the Initiator.  Together
+      these map the chain's root signing key to the Initiator as a
+      validated actor identity, which is what
+      [I-D.mcguinness-oauth-presenter-delegation] requires before the
+      Initiator may be recorded as a prior actor.  The party proving
+      possession of the outermost Recipient key MUST be the client
+      authenticated for the request, that is, the Delegate; the IdP
+      confirms this because the Delegate authenticates as its client,
+      presents its actor_token, and proves the Recipient key on the same
+      request.  Intermediate keys in a chain are not actor identities
+      and MUST NOT be recorded as prior actors.
+
+   Request-constraint mapping:  The pda_constraints members audience,
+      resource, scope, and authorization_details bound the
+      correspondingly named Token Exchange request values.  Each such
+      value in the resulting authorization MUST lie within the
+      corresponding pda_constraints member, in addition to being
+      authorized by the CCDR, may_act, and exchange-time policy.
+
+   Combination:  A valid Delegation Chain is conjunctive with the CCDR,
+      may_act when present, Delegate client and actor authentication,
+      and exchange-time policy (Section 4); it substitutes for none of
+      them, and none of them overrides its constraints.  Because the
+      Initiator's confirmation key cryptographically authorized the
+      handoff, the IdP MAY record the Initiator as a nested prior actor
+      (Section 10); the chain is the additional mechanism that section
+      otherwise requires.
+
+12.6.  OAuth Actor Profile for Delegation
 
    The actor-token validation and act claim construction rules in this
    profile align with the OAuth Actor Profile for Delegation
