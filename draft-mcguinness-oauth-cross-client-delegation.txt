@@ -4,8 +4,8 @@
 
 Web Authorization Protocol                                 K. McGuinness
 Internet-Draft                                               Independent
-Intended status: Standards Track                           2 August 2026
-Expires: 3 February 2027
+Intended status: Standards Track                           6 August 2026
+Expires: 7 February 2027
 
 
       Cross-Client Delegation Profile for OAuth 2.0 Token Exchange
@@ -62,7 +62,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 3 February 2027.
+   This Internet-Draft will expire on 7 February 2027.
 
 Copyright Notice
 
@@ -108,7 +108,7 @@ Table of Contents
      12.2.  OpenID Connect Cross-Client Identity
      12.3.  Identity Assertion JWT Authorization Grant (ID-JAG)
      12.4.  OpenID Connect Key Binding
-     12.5.  Composition with Presenter Delegation
+     12.5.  Composition with Presenter Rebinding
      12.6.  OAuth Actor Profile for Delegation
    13. Security Considerations
      13.1.  Trust Anchor for the Relationship
@@ -481,8 +481,8 @@ Table of Contents
       Deployments relying on captured-assertion resistance in the base
       profile MUST NOT assume the IdP enforces handoff assurance.  The
       exception is a cryptographic presenter-transition mechanism such
-      as Presenter Delegation (Section 12.5): its chain is an
-      authenticated handoff that is carried in the request and
+      as Presenter Rebinding (Section 12.5): the assertion it carries is
+      an authenticated handoff that is present in the request and
       verifiable by the IdP, which moves handoff assurance into the
       token-endpoint authorization property above.
 
@@ -693,7 +693,7 @@ Table of Contents
    the Initiator's key, so full unrelaxed validation of such an
    assertion cannot succeed.  A deployment combining key binding with
    this profile MUST use a presenter-transition mechanism, such as
-   Presenter Delegation [I-D.mcguinness-oauth-presenter-delegation], as
+   Presenter Rebinding [I-D.mcguinness-oauth-presenter-rebinding], as
    required by Section 13.3; see also Section 12.4.  (Note that DPoP
    [RFC9449] binds OAuth access and refresh tokens, not ID Tokens, so it
    is not a mechanism for binding an ID Token used here; DPoP remains
@@ -1146,11 +1146,18 @@ Table of Contents
    The Token Exchange response is constructed according to [RFC8693],
    Section 2.2 and the requested token's profile.  The IdP SHOULD NOT
    issue a refresh token in response to an exchange under this profile.
-   If the originating subject token carried a may_act claim, the IdP
-   MUST NOT issue a refresh token: a may_act claim is a point-in-time,
-   per-assertion authorization (see Section 8) that a refresh token,
-   decoupled from that assertion and typically outliving it, cannot
-   preserve.
+   The IdP MUST NOT issue a refresh token when the originating subject
+   token carried a may_act claim, or when the exchange was authorized by
+   a Presenter Rebinding Assertion (Section 12.5).  Both are point-in-
+   time, per-assertion authorizations that a refresh token, decoupled
+   from the assertion and typically outliving it, cannot preserve:
+   may_act names an eligible actor for one assertion (see Section 8),
+   and a PRA authorizes one presenter transition over one assertion for
+   a short interval.  In the PRA case the loss is sharper, because a
+   refresh token issued to a confidential client is bound to that
+   client's credentials rather than to the key the PRA authorized, so
+   redeeming it would continue the delegation on an authority the
+   Initiator never granted.
 
    If the IdP issues a refresh token in the absence of may_act, it MUST
    bind the refresh token to the Delegate and MUST record the concrete
@@ -1306,78 +1313,138 @@ Table of Contents
    transferred or re-established from the Initiator to the Delegate,
    which key binding alone does not provide.
 
-   Presenter Delegation [I-D.mcguinness-oauth-presenter-delegation]
+   Presenter Rebinding [I-D.mcguinness-oauth-presenter-rebinding]
    provides that transfer: the Initiator, holding the key bound in the
-   Identity Assertion's cnf claim, signs an attenuated delegation to the
-   Delegate's key, and the IdP validates the chain from the assertion's
-   confirmation key to the key the Delegate proves possession of.  A
-   deployment that combines key binding with this profile MAY use
-   Presenter Delegation as the presenter-transition mechanism; its
-   delegation chain is also an IdP-verifiable per-assertion artifact and
-   an authenticated handoff, and so raises the exchange to the
+   Identity Assertion's cnf claim, signs a Presenter Rebinding Assertion
+   (PRA) authorizing the Delegate's key to present that exact assertion
+   at this IdP, and the IdP verifies the PRA under the assertion's
+   confirmation key and the Delegate's DPoP proof of the authorized key.
+   The authorization is one hop: it covers this presentation only, and a
+   later presenter transition requires a new exchange rather than an
+   extension of the PRA.  A deployment that combines key binding with
+   this profile MAY use Presenter Rebinding as the presenter-transition
+   mechanism; the PRA is also an IdP-verifiable per-assertion artifact
+   and an authenticated handoff, and so raises the exchange to the
    assertion-bound operation of Section 4.  Section 12.5 defines the
    normative binding between the two documents.
 
-12.5.  Composition with Presenter Delegation
+12.5.  Composition with Presenter Rebinding
 
-   A deployment MAY compose this profile with Presenter Delegation
-   [I-D.mcguinness-oauth-presenter-delegation] to accept a key-bound
+   A deployment MAY compose this profile with Presenter Rebinding
+   [I-D.mcguinness-oauth-presenter-rebinding] to accept a key-bound
    Identity Assertion, which the base profile excludes (Section 6.1).
    When it does, this section supplies the profile-specific definitions
-   that [I-D.mcguinness-oauth-presenter-delegation] requires a consuming
-   profile to provide.  This profile opts in to presenter delegation
-   only for a key-bound Identity Assertion presented at Token Exchange
-   under this profile; the IdP MUST NOT accept a Presenter Delegation
-   Assertion (PDA) for any other purpose.  The CCDR-authorized audience
-   exception of Section 9 continues to apply unchanged: the Delegate is
-   still not the assertion's audience, the CCDR still authorizes the
-   pairing, and Presenter Delegation additionally continues proof of
-   possession from the Initiator's key to the Delegate's.
+   that [I-D.mcguinness-oauth-presenter-rebinding] requires a consuming
+   profile to provide.  This profile opts in to presenter rebinding only
+   for a key-bound Identity Assertion presented at Token Exchange under
+   this profile; the IdP MUST NOT accept a Presenter Rebinding Assertion
+   (PRA) for any other purpose.  The CCDR-authorized audience exception
+   of Section 9 continues to apply unchanged: the Delegate is still not
+   the assertion's audience, the CCDR still authorizes the pairing, and
+   Presenter Rebinding additionally continues proof of possession from
+   the Initiator's key to the Delegate's.
 
-   Verifier and proof of possession:  The Verifier is the IdP.  Every
-      PDA's aud MUST contain the IdP's issuer identifier.  The accepted
-      proof-of-possession method is DPoP [RFC9449]: the Delegate MUST
-      present a DPoP proof of the outermost Recipient key on the Token
-      Exchange request.
+   Source Token and token type:  The Source Token is the Initiator's
+      key-bound Identity Assertion, presented as subject_token.  The PRA
+      stt claim MUST be urn:ietf:params:oauth:token-type:id_token,
+      matching the subject_token_type this profile requires (Section 6).
+      Its confirmation key is reduced to a JWK SHA-256 Thumbprint as
+      specified in [I-D.mcguinness-oauth-presenter-rebinding].  For an
+      assertion key-bound per OpenID Connect Key Binding
+      [OpenID.KeyBinding], whose cnf carries a jwk, that thumbprint is
+      the JWK SHA-256 Thumbprint of the jwk.
 
-   Confirmation-key reduction:  The Source Token is the Initiator's key-
-      bound Identity Assertion.  Its confirmation key is reduced to a
-      JWK SHA-256 Thumbprint as specified in
-      [I-D.mcguinness-oauth-presenter-delegation].  For an assertion
-      key-bound per OpenID Connect Key Binding [OpenID.KeyBinding],
-      whose cnf carries a jwk, that thumbprint is the JWK SHA-256
-      Thumbprint of the jwk.
+   Proof of possession:  The IdP is the authorization server named by
+      the PRA.  The PRA aud MUST equal the IdP's issuer identifier.  The
+      Delegate MUST present a DPoP proof [RFC9449] of the Recipient
+      Presenter key on the Token Exchange request, and that key MUST be
+      the one the PRA cnf.jkt identifies.  [RFC9449] permits one DPoP
+      proof per request, so the Delegate uses a single key both to
+      satisfy the PRA and to receive the sender-constrained output.
 
-   Party identity:  Presenter Delegation roots the chain in the Source
-      Token's confirmation key
-      ([I-D.mcguinness-oauth-presenter-delegation]), and step 2 of
-      Section 9.2 resolves that assertion to the Initiator.  Together
-      these map the chain's root signing key to the Initiator as a
-      validated actor identity, which is what
-      [I-D.mcguinness-oauth-presenter-delegation] requires before the
-      Initiator may be recorded as a prior actor.  The party proving
-      possession of the outermost Recipient key MUST be the client
-      authenticated for the request, that is, the Delegate; the IdP
-      confirms this because the Delegate authenticates as its client,
-      presents its actor_token, and proves the Recipient key on the same
-      request.  Intermediate keys in a chain are not actor identities
-      and MUST NOT be recorded as prior actors.
+   Recipient key authentication:  Before signing a PRA, the Initiator
+      MUST obtain the Delegate's DPoP public key, or its thumbprint,
+      over a channel that authenticates the Delegate and protects the
+      value's integrity.  A deployment MUST supply one of: a key
+      registered for the Delegate at the IdP and conveyed to the
+      Initiator by the IdP or by administrative configuration; or a key
+      the Delegate presents to the Initiator within the authenticated
+      invocation described in Appendix A.5, where the Initiator can
+      attribute the invocation to the Delegate registration named by the
+      CCDR.  A deployment MUST NOT allow the Initiator to accept a
+      recipient key from an unauthenticated channel: an attacker that
+      substitutes its own key before the Initiator signs obtains a PRA
+      that validly authorizes that attacker key, and the IdP cannot
+      detect the substitution because the PRA is well formed.  The
+      Initiator SHOULD confirm that the key it received belongs to a
+      Delegate the CCDR authorizes before signing.
 
-   Request-constraint mapping:  The pda_constraints members audience,
-      resource, scope, and authorization_details bound the
-      correspondingly named Token Exchange request values.  Each such
-      value in the resulting authorization MUST lie within the
-      corresponding pda_constraints member, in addition to being
-      authorized by the CCDR, may_act, and exchange-time policy.
+   Party identity:  The PRA is signed by the Source Confirmation Key,
+      and step 2 of Section 9.2 resolves the Identity Assertion to the
+      Initiator.  Together these map the PRA signing key to the
+      Initiator as a validated actor identity, which is what
+      [I-D.mcguinness-oauth-presenter-rebinding] requires before the
+      Initiator may be recorded as a prior actor.  The party proving the
+      Recipient Presenter key MUST be the client authenticated for the
+      request, that is, the Delegate; the IdP confirms this because the
+      Delegate authenticates as its client, presents its actor_token,
+      and proves that key on the same request.  Because the mechanism is
+      one hop, at most one prior actor arises from it, so the act
+      nesting this composition produces is bounded at the Delegate with
+      the Initiator nested beneath, as shown in Section 10.
 
-   Combination:  A valid Delegation Chain is conjunctive with the CCDR,
-      may_act when present, Delegate client and actor authentication,
-      and exchange-time policy (Section 4); it substitutes for none of
-      them, and none of them overrides its constraints.  Because the
-      Initiator's confirmation key cryptographically authorized the
-      handoff, the IdP MAY record the Initiator as a nested prior actor
-      (Section 10); the chain is the additional mechanism that section
-      otherwise requires.
+   Request-constraint mapping:  The presenter_limits members audience,
+      resource, and scope bound the correspondingly named Token Exchange
+      request values, in addition to the CCDR, may_act, and exchange-
+      time policy.  When the PRA carries one of these members, the
+      request MUST carry the corresponding parameter; the IdP MUST NOT
+      supply a default for a limited dimension.  These limits are a
+      Cartesian-product ceiling, as
+      [I-D.mcguinness-oauth-presenter-rebinding] explains: a PRA
+      permitting two audiences and two scopes permits both scopes at
+      both audiences.  An Initiator that needs to correlate a scope with
+      a particular audience MUST sign a separate PRA for each
+      combination.  Presenter Rebinding defines no limit for
+      authorization_details; a deployment that requires one MUST rely on
+      the CCDR constraints of Section 5 and on exchange-time policy for
+      that dimension, which this profile requires independently.
+
+   Issued token:  The output is an access token sender-constrained to
+      the Recipient Presenter key, with token_type of DPoP.  This
+      narrows Section 10 in three ways for a composed exchange.  Sender
+      constraining is REQUIRED rather than RECOMMENDED, and mutual TLS
+      [RFC8705] is not available for it, because the binding must be to
+      the key the PRA authorized.  The output token type is restricted
+      to an access token, so the composed profile is the mandatory-to-
+      implement combination of Section 6; issuing an ID-JAG or any other
+      type under a composed exchange requires a specification defining
+      how the Recipient Presenter key binding is represented in that
+      type.  And the IdP MUST NOT issue a refresh token, extending the
+      prohibition Section 10 already applies to an assertion carrying
+      may_act, for the same reason and with greater force: a PRA is a
+      point-in-time authorization of one presenter transition over one
+      assertion, and a refresh token decoupled from it would let the
+      Delegate obtain further tokens after the PRA expired with no
+      authorized transition and no re-evaluation of the handoff.
+
+   Errors:  [I-D.mcguinness-oauth-presenter-rebinding] assigns
+      invalid_target to a request outside an audience or resource limit.
+      An IdP that treats the existence of a CCDR as confidential MUST
+      instead return invalid_request uniformly, as Section 9.3 requires
+      and as [I-D.mcguinness-oauth-presenter-rebinding] permits an
+      applicable profile to require.  DPoP proof failures use
+      invalid_dpop_proof per [RFC9449]; where one JWT value fails as
+      both client_assertion and actor_token, the invalid_client
+      precedence of Section 9.3 continues to apply.
+
+   Combination:  A valid PRA is conjunctive with the CCDR, may_act when
+      present, Delegate client and actor authentication, and exchange-
+      time policy (Section 4); it substitutes for none of them, and none
+      of them overrides its limits.  Because the Initiator's
+      confirmation key cryptographically authorized this handoff, the
+      IdP MAY record the Initiator as a nested prior actor (Section 10);
+      the PRA is the additional mechanism that section otherwise
+      requires.
 
 12.6.  OAuth Actor Profile for Delegation
 
@@ -1773,11 +1840,11 @@ Table of Contents
               <https://datatracker.ietf.org/doc/html/draft-mcguinness-
               oauth-actor-profile-00>.
 
-   [I-D.mcguinness-oauth-presenter-delegation]
-              McGuinness, K., "Presenter Delegation for OAuth 2.0 Proof-
+   [I-D.mcguinness-oauth-presenter-rebinding]
+              McGuinness, K., "Presenter Rebinding for OAuth 2.0 Proof-
               of-Possession Tokens", 2026,
               <https://datatracker.ietf.org/doc/html/draft-mcguinness-
-              oauth-presenter-delegation>.
+              oauth-presenter-rebinding>.
 
    [OpenID.KeyBinding]
               Hardt, D. and E. Heilman, "OpenID Connect Key Binding 1.0
