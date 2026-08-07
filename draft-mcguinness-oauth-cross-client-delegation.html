@@ -1051,7 +1051,7 @@ svg {
 </tr></thead>
 <tfoot><tr>
 <td class="left">McGuinness</td>
-<td class="center">Expires 7 February 2027</td>
+<td class="center">Expires 8 February 2027</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1064,12 +1064,12 @@ svg {
 <dd class="internet-draft">draft-mcguinness-oauth-cross-client-delegation-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-08-06" class="published">6 August 2026</time>
+<time datetime="2026-08-07" class="published">7 August 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2027-02-07">7 February 2027</time></dd>
+<dd class="expires"><time datetime="2027-02-08">8 February 2027</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1119,7 +1119,7 @@ svg {
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 7 February 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 8 February 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1414,8 +1414,9 @@ svg {
         <h3 id="name-applicability">
 <a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-applicability" class="section-name selfRef">Applicability</a>
         </h3>
-<p id="section-1.1-1">This profile applies when a confidential client acts for an End-User using an Identity Assertion issued to a different client registration, and the authorization server administers a trust relationship between those two registrations.  The Initiator, the Delegate, and the Identity Assertion are all administered by a single authorization server (the IdP); cross-organizational and multi-IdP delegation are out of scope (see <a href="#non-goals" class="auto internal xref">Section 1.2</a> and <a href="#security-cross-vendor" class="auto internal xref">Section 13.7</a>).<a href="#section-1.1-1" class="pilcrow">¶</a></p>
-<p id="section-1.1-2">This profile is intended to compose with token-specific profiles such as ID-JAG <span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span>.  That composition currently has an unresolved normative dependency on ID-JAG and is not yet jointly implementable with unmodified ID-JAG; see <a href="#related-idjag" class="auto internal xref">Section 12.3</a>.  <a href="#appendix-broker" class="auto internal xref">Appendix A</a> describes an informative deployment pattern applying this profile to ID-JAG in an enterprise gateway topology.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+<p id="section-1.1-1">This profile applies when a confidential client acts for an End-User using an Identity Assertion issued to a different client registration, and the authorization server administers a trust relationship between those two registrations.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">It exists for deployments that cannot re-mint the assertion.  A deployment able to obtain an Identity Assertion whose audience already names the client that will present it does not need this profile: that assertion satisfies the ordinary audience check, and the CCDR, <code>may_act</code>, and actor-token machinery here buy it nothing.  <a href="#profile-selection" class="auto internal xref">Section 9.1</a> routes such a request to base <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> rather than into this profile.  The exception this profile defines is for the case where the assertion already exists, is audienced to the Initiator, and cannot be reissued.  The Initiator, the Delegate, and the Identity Assertion are all administered by a single authorization server (the IdP); cross-organizational and multi-IdP delegation are out of scope (see <a href="#non-goals" class="auto internal xref">Section 1.2</a> and <a href="#security-cross-vendor" class="auto internal xref">Section 13.7</a>).<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+<p id="section-1.1-3">This profile is intended to compose with token-specific profiles such as ID-JAG <span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span>.  That composition currently has an unresolved normative dependency on ID-JAG and is not yet jointly implementable with unmodified ID-JAG; see <a href="#related-idjag" class="auto internal xref">Section 12.3</a>.  <a href="#appendix-broker" class="auto internal xref">Appendix A</a> describes an informative deployment pattern applying this profile to ID-JAG in an enterprise gateway topology.<a href="#section-1.1-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="non-goals">
@@ -1662,7 +1663,8 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
 </dd>
       <dd class="break"></dd>
 </dl>
-<p id="section-4-4">CCDR-only, uncorrelated-bearer operation is the weakest combination and carries the captured-assertion risk of <a href="#security-captured" class="auto internal xref">Section 13.3</a>; it is a legitimate administrative-authorization model but the IdP <span class="bcp14">MUST NOT</span> be relied on to detect that a captured assertion was not conveyed by the Initiator.  Neither property, by itself, establishes End-User consent or per-request authorization by the End-User; see <a href="#security-consent" class="auto internal xref">Section 13.8</a>.  A deployment <span class="bcp14">SHOULD</span> document the token-endpoint authorization it requires and the handoff assurance it enforces, and when it operates without an IdP-verifiable per-assertion artifact <span class="bcp14">SHOULD</span> apply the compensating controls of <a href="#security" class="auto internal xref">Section 13</a>: short assertion lifetimes and replay controls (<a href="#security-captured" class="auto internal xref">Section 13.3</a>), narrowly scoped CCDRs (<a href="#security-trust-anchor" class="auto internal xref">Section 13.1</a>), and constrained downstream authorization (<a href="#security-freshness" class="auto internal xref">Section 13.5</a>).  Whether a future revision should require an IdP-verifiable per-assertion artifact is left open; see <a href="#open-items" class="auto internal xref">Appendix B</a>.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<p id="section-4-4">CCDR-only, uncorrelated-bearer operation is the weakest combination and carries the captured-assertion risk of <a href="#security-captured" class="auto internal xref">Section 13.3</a>; it is a legitimate administrative-authorization model but the IdP <span class="bcp14">MUST NOT</span> be relied on to detect that a captured assertion was not conveyed by the Initiator.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<p id="section-4-5">This is also the mandatory-to-implement configuration (<a href="#request" class="auto internal xref">Section 6</a>), because <code>may_act</code> requires the IdP to decide and record an eligible actor when it mints the assertion, and a key-bound assertion is excluded from the base profile (<a href="#id-token-profile" class="auto internal xref">Section 6.1</a>).  Both raise the assurance of an exchange, and both require changing how assertions are issued.  This profile does not require either, so that a deployment can adopt cross-client delegation by administering a relationship rather than by changing its token issuance.  The assurance of the base profile therefore rests on administration rather than on anything carried in the assertion, and a deployment operating it <span class="bcp14">MUST</span> apply the compensating controls of <a href="#security-captured" class="auto internal xref">Section 13.3</a>: short assertion lifetimes, replay controls where the assertion carries a unique identifier, and CCDRs scoped as narrowly as the deployment allows.  A deployment that can supply an IdP-verifiable per-assertion artifact <span class="bcp14">SHOULD</span> do so rather than rely on those controls alone.  Neither property, by itself, establishes End-User consent or per-request authorization by the End-User; see <a href="#security-consent" class="auto internal xref">Section 13.8</a>.  A deployment <span class="bcp14">SHOULD</span> document the token-endpoint authorization it requires and the handoff assurance it enforces, and when it operates without an IdP-verifiable per-assertion artifact <span class="bcp14">SHOULD</span> apply the compensating controls of <a href="#security" class="auto internal xref">Section 13</a>: short assertion lifetimes and replay controls (<a href="#security-captured" class="auto internal xref">Section 13.3</a>), narrowly scoped CCDRs (<a href="#security-trust-anchor" class="auto internal xref">Section 13.1</a>), and constrained downstream authorization (<a href="#security-freshness" class="auto internal xref">Section 13.5</a>).  Whether a future revision should require an IdP-verifiable per-assertion artifact is left open; see <a href="#open-items" class="auto internal xref">Appendix B</a>.<a href="#section-4-5" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="ccdr">
@@ -1926,7 +1928,10 @@ grant_type=urn:ietf:params:oauth:grant-type:token-exchange
                 <p id="section-9.1-2.4.2.1.1">If the resolved Initiator is the same client registration as the authenticated client, this profile does not govern.  The request is a same-client exchange handled under base <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> and the applicable token profile, whose audience check the assertion already satisfies.<a href="#section-9.1-2.4.2.1.1" class="pilcrow">¶</a></p>
 </li>
               <li class="normal" id="section-9.1-2.4.2.2">
-                <p id="section-9.1-2.4.2.2.1">Otherwise the request is a cross-client delegation and this profile governs.<a href="#section-9.1-2.4.2.2.1" class="pilcrow">¶</a></p>
+                <p id="section-9.1-2.4.2.2.1">If the assertion's <code>aud</code> is single-valued and identifies the authenticated client, this profile does not govern either, even where <code>azp</code> resolves the Initiator to a different registration.  Such an assertion already satisfies the audience check without any exception, so no relaxation is required and none is applied; the request is handled under base <span>[<a href="#RFC8693" class="cite xref">RFC8693</a>]</span> and the applicable token profile.  This is the shape produced by the cross-client identity conventions of <a href="#related-google" class="auto internal xref">Section 12.2</a>, in which the initiating client obtains an assertion audienced to the client that will consume it.  A deployment that can mint such an assertion does not need this profile at all (<a href="#applicability" class="auto internal xref">Section 1.1</a>), and requiring it to administer a CCDR in order to keep working would be a barrier to no purpose.<a href="#section-9.1-2.4.2.2.1" class="pilcrow">¶</a></p>
+</li>
+              <li class="normal" id="section-9.1-2.4.2.3">
+                <p id="section-9.1-2.4.2.3.1">Otherwise the request is a cross-client delegation and this profile governs.<a href="#section-9.1-2.4.2.3.1" class="pilcrow">¶</a></p>
 </li>
             </ul>
 </li>
@@ -2064,15 +2069,21 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
 <p id="section-11-1">An IdP advertises support for this profile in its authorization server metadata <span>[<a href="#RFC8414" class="cite xref">RFC8414</a>]</span> using the <code>authorization_grant_profiles_supported</code> parameter defined by <span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span>, together with a companion parameter defined by this document:<a href="#section-11-1" class="pilcrow">¶</a></p>
 <span class="break"></span><dl class="dlParallel" id="section-11-2">
         <dt id="section-11-2.1">
-<code>authorization_grant_profiles_supported</code>:</dt>
+<code>cross_client_delegation_supported</code>:</dt>
         <dd style="margin-left: 1.5em" id="section-11-2.2">
-          <p id="section-11-2.2.1">The set of grant profile identifiers the authorization server supports, as defined by <span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span>.  An authorization server that supports this profile <span class="bcp14">MUST</span> include the value <code>urn:ietf:params:oauth:grant-profile:cross-client-delegation</code> in this array and <span class="bcp14">MUST</span> also include <code>urn:ietf:params:oauth:grant-type:token-exchange</code> in <code>grant_types_supported</code>.<a href="#section-11-2.2.1" class="pilcrow">¶</a></p>
+          <p id="section-11-2.2.1">Boolean value indicating support for this profile.  The value is <code>true</code> when supported.  An authorization server that supports this profile <span class="bcp14">MUST</span> include this member and <span class="bcp14">MUST</span> also include <code>urn:ietf:params:oauth:grant-type:token-exchange</code> in <code>grant_types_supported</code>.  This member is defined by this document and does not depend on any other specification, so the mandatory-to-implement combination of <a href="#request" class="auto internal xref">Section 6</a> is discoverable today.<a href="#section-11-2.2.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 <dt id="section-11-2.3">
-<code>cross_client_delegation_token_types_supported</code>:</dt>
+<code>authorization_grant_profiles_supported</code>:</dt>
         <dd style="margin-left: 1.5em" id="section-11-2.4">
-          <p id="section-11-2.4.1"><span class="bcp14">OPTIONAL</span>.  A JSON array of objects describing the (<code>subject_token_type</code>, <code>actor_token_type</code>) combinations the authorization server will accept under this profile.  Each object <span class="bcp14">MUST</span> contain a <code>subject_token_type</code> member and an <code>actor_token_type</code> member, each of whose values is a token type identifier URI.  Unknown object members <span class="bcp14">MUST</span> be ignored.  If this parameter is omitted, support for the mandatory ID Token and JWT client assertion combination is implied.  If it is present, it <span class="bcp14">MUST</span> include that combination.<a href="#section-11-2.4.1" class="pilcrow">¶</a></p>
+          <p id="section-11-2.4.1"><span class="bcp14">OPTIONAL</span>.  The set of grant profile identifiers the authorization server supports, as defined by <span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span>.  An authorization server that supports this profile and also implements that parameter <span class="bcp14">SHOULD</span> include the value <code>urn:ietf:params:oauth:grant-profile:cross-client-delegation</code> in this array.  This is a convenience for deployments already using that discovery surface; it is not required, because <a href="#related-idjag" class="auto internal xref">Section 12.3</a> describes an unresolved dependency on the specification that defines it.<a href="#section-11-2.4.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-11-2.5">
+<code>cross_client_delegation_token_types_supported</code>:</dt>
+        <dd style="margin-left: 1.5em" id="section-11-2.6">
+          <p id="section-11-2.6.1"><span class="bcp14">OPTIONAL</span>.  A JSON array of objects describing the (<code>subject_token_type</code>, <code>actor_token_type</code>) combinations the authorization server will accept under this profile.  Each object <span class="bcp14">MUST</span> contain a <code>subject_token_type</code> member and an <code>actor_token_type</code> member, each of whose values is a token type identifier URI.  Unknown object members <span class="bcp14">MUST</span> be ignored.  If this parameter is omitted, support for the mandatory ID Token and JWT client assertion combination is implied.  If it is present, it <span class="bcp14">MUST</span> include that combination.<a href="#section-11-2.6.1" class="pilcrow">¶</a></p>
 </dd>
       <dd class="break"></dd>
 </dl>
@@ -2083,6 +2094,7 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
   "grant_types_supported": [
     "urn:ietf:params:oauth:grant-type:token-exchange"
   ],
+  "cross_client_delegation_supported": true,
   "authorization_grant_profiles_supported": [
     "urn:ietf:params:oauth:grant-profile:cross-client-delegation"
   ],
@@ -2179,7 +2191,7 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
           <dd class="break"></dd>
 <dt id="section-12.5-2.9">Request-constraint mapping:</dt>
           <dd style="margin-left: 1.5em" id="section-12.5-2.10">
-            <p id="section-12.5-2.10.1">The <code>presenter_limits</code> members <code>audience</code>, <code>resource</code>, and <code>scope</code> bound the correspondingly named Token Exchange request values, in addition to the CCDR, <code>may_act</code>, and exchange-time policy.  When the PRA carries one of these members, the request <span class="bcp14">MUST</span> carry the corresponding parameter; the IdP <span class="bcp14">MUST NOT</span> supply a default for a limited dimension.  These limits are a Cartesian-product ceiling, as <span>[<a href="#I-D.mcguinness-oauth-presenter-rebinding" class="cite xref">I-D.mcguinness-oauth-presenter-rebinding</a>]</span> explains: a PRA permitting two audiences and two scopes permits both scopes at both audiences.  An Initiator that needs to correlate a scope with a particular audience <span class="bcp14">MUST</span> sign a separate PRA for each combination.  Presenter Rebinding defines no limit for <code>authorization_details</code>; a deployment that requires one <span class="bcp14">MUST</span> rely on the CCDR constraints of <a href="#ccdr" class="auto internal xref">Section 5</a> and on exchange-time policy for that dimension, which this profile requires independently.<a href="#section-12.5-2.10.1" class="pilcrow">¶</a></p>
+            <p id="section-12.5-2.10.1">The PRA <code>presenter_limits</code> member <code>audience</code> bounds the Token Exchange <code>audience</code> request values, in addition to the CCDR, <code>may_act</code>, and exchange-time policy.  When the PRA carries it, the request <span class="bcp14">MUST</span> carry an <code>audience</code> parameter; the IdP <span class="bcp14">MUST NOT</span> supply a default for it.  Presenter Rebinding bounds no other dimension, so resources, scopes, and <code>authorization_details</code> rest on the CCDR constraints of <a href="#ccdr" class="auto internal xref">Section 5</a> and on the exchange-time policy evaluation of step 7 of <a href="#processing-steps" class="auto internal xref">Section 9.2</a>, both of which this profile requires independently of any PRA.<a href="#section-12.5-2.10.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
 <dt id="section-12.5-2.11">Issued token:</dt>
@@ -2372,7 +2384,7 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
             <p id="section-15.1-2.4.1">Specification Document: <a href="#as-metadata" class="auto internal xref">Section 11</a> of this document<a href="#section-15.1-2.4.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
-<p id="section-15.1-3">Note: The <code>authorization_grant_profiles_supported</code> metadata parameter and the <code>urn:ietf:params:oauth:grant-profile:</code> value convention referenced by this document are defined by <span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span>.  The registration above is contingent on the progression of that specification; if its grant profile identifier scheme changes, this registration should be aligned with the final scheme.<a href="#section-15.1-3" class="pilcrow">¶</a></p>
+<p id="section-15.1-3">Note: The <code>authorization_grant_profiles_supported</code> metadata parameter and the <code>urn:ietf:params:oauth:grant-profile:</code> value convention referenced by this document are defined by <span>[<a href="#I-D.ietf-oauth-identity-assertion-authz-grant" class="cite xref">I-D.ietf-oauth-identity-assertion-authz-grant</a>]</span>.  The registration above is contingent on the progression of that specification; if its grant profile identifier scheme changes, this registration should be aligned with the final scheme.  Discovery of this profile does not depend on that outcome: <a href="#as-metadata" class="auto internal xref">Section 11</a> defines <code>cross_client_delegation_supported</code> for that purpose, and the registration above serves deployments that already use the ID-JAG discovery surface.<a href="#section-15.1-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="iana-client-metadata">
@@ -2420,16 +2432,31 @@ The IdP <span class="bcp14">MUST</span> reject an assertion when the Initiator c
 <p id="section-15.3-1">This document requests IANA to register the following value in the "OAuth Authorization Server Metadata" registry established by <span>[<a href="#RFC8414" class="cite xref">RFC8414</a>]</span>:<a href="#section-15.3-1" class="pilcrow">¶</a></p>
 <ul class="normal">
 <li class="normal" id="section-15.3-2.1">
-            <p id="section-15.3-2.1.1">Metadata Name: <code>cross_client_delegation_token_types_supported</code><a href="#section-15.3-2.1.1" class="pilcrow">¶</a></p>
+            <p id="section-15.3-2.1.1">Metadata Name: <code>cross_client_delegation_supported</code><a href="#section-15.3-2.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-15.3-2.2">
-            <p id="section-15.3-2.2.1">Metadata Description: JSON array of objects describing the subject token type and actor token type combinations accepted under the Cross-Client Delegation profile<a href="#section-15.3-2.2.1" class="pilcrow">¶</a></p>
+            <p id="section-15.3-2.2.1">Metadata Description: Boolean indicating authorization server support for the Cross-Client Delegation profile<a href="#section-15.3-2.2.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-15.3-2.3">
             <p id="section-15.3-2.3.1">Change Controller: IESG<a href="#section-15.3-2.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-15.3-2.4">
             <p id="section-15.3-2.4.1">Specification Document: <a href="#as-metadata" class="auto internal xref">Section 11</a> of this document<a href="#section-15.3-2.4.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-15.3-3">and:<a href="#section-15.3-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-15.3-4.1">
+            <p id="section-15.3-4.1.1">Metadata Name: <code>cross_client_delegation_token_types_supported</code><a href="#section-15.3-4.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-15.3-4.2">
+            <p id="section-15.3-4.2.1">Metadata Description: JSON array of objects describing the subject token type and actor token type combinations accepted under the Cross-Client Delegation profile<a href="#section-15.3-4.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-15.3-4.3">
+            <p id="section-15.3-4.3.1">Change Controller: IESG<a href="#section-15.3-4.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-15.3-4.4">
+            <p id="section-15.3-4.4.1">Specification Document: <a href="#as-metadata" class="auto internal xref">Section 11</a> of this document<a href="#section-15.3-4.4.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 </section>
