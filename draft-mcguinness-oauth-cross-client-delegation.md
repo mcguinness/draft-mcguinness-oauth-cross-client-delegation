@@ -128,7 +128,9 @@ This profile factors out the shape that OpenID Connect cross-client identity con
 
 ## Applicability {#applicability}
 
-This profile applies when a confidential client acts for an End-User using an Identity Assertion issued to a different client registration, and the authorization server administers a trust relationship between those two registrations.  The Initiator, the Delegate, and the Identity Assertion are all administered by a single authorization server (the IdP); cross-organizational and multi-IdP delegation are out of scope (see {{non-goals}} and {{security-cross-vendor}}).
+This profile applies when a confidential client acts for an End-User using an Identity Assertion issued to a different client registration, and the authorization server administers a trust relationship between those two registrations.
+
+It exists for deployments that cannot re-mint the assertion.  A deployment able to obtain an Identity Assertion whose audience already names the client that will present it does not need this profile: that assertion satisfies the ordinary audience check, and the CCDR, `may_act`, and actor-token machinery here buy it nothing.  {{profile-selection}} routes such a request to base {{RFC8693}} rather than into this profile.  The exception this profile defines is for the case where the assertion already exists, is audienced to the Initiator, and cannot be reissued.  The Initiator, the Delegate, and the Identity Assertion are all administered by a single authorization server (the IdP); cross-organizational and multi-IdP delegation are out of scope (see {{non-goals}} and {{security-cross-vendor}}).
 
 This profile is intended to compose with token-specific profiles such as ID-JAG {{I-D.ietf-oauth-identity-assertion-authz-grant}}.  That composition currently has an unresolved normative dependency on ID-JAG and is not yet jointly implementable with unmodified ID-JAG; see {{related-idjag}}.  {{appendix-broker}} describes an informative deployment pattern applying this profile to ID-JAG in an enterprise gateway topology.
 
@@ -301,7 +303,9 @@ Token-endpoint authorization:
 Handoff assurance:
 : Whether the Initiator's conveyance of the assertion to the Delegate was authenticated and correlated (see {{appendix-handoff}}) or was uncorrelated bearer forwarding.  In the base profile this is a deployment property enforced at the Delegate, not at the IdP: nothing representing an authenticated handoff is necessarily present in the Token Exchange request, so the IdP cannot determine it per request, and a compromised Delegate could omit the correlation while sending an otherwise identical request.  Deployments relying on captured-assertion resistance in the base profile MUST NOT assume the IdP enforces handoff assurance.  The exception is a cryptographic presenter-transition mechanism such as Presenter Rebinding ({{composition-pr}}): the assertion it carries is an authenticated handoff that is present in the request and verifiable by the IdP, which moves handoff assurance into the token-endpoint authorization property above.
 
-CCDR-only, uncorrelated-bearer operation is the weakest combination and carries the captured-assertion risk of {{security-captured}}; it is a legitimate administrative-authorization model but the IdP MUST NOT be relied on to detect that a captured assertion was not conveyed by the Initiator.  Neither property, by itself, establishes End-User consent or per-request authorization by the End-User; see {{security-consent}}.  A deployment SHOULD document the token-endpoint authorization it requires and the handoff assurance it enforces, and when it operates without an IdP-verifiable per-assertion artifact SHOULD apply the compensating controls of {{security}}: short assertion lifetimes and replay controls ({{security-captured}}), narrowly scoped CCDRs ({{security-trust-anchor}}), and constrained downstream authorization ({{security-freshness}}).  Whether a future revision should require an IdP-verifiable per-assertion artifact is left open; see {{open-items}}.
+CCDR-only, uncorrelated-bearer operation is the weakest combination and carries the captured-assertion risk of {{security-captured}}; it is a legitimate administrative-authorization model but the IdP MUST NOT be relied on to detect that a captured assertion was not conveyed by the Initiator.
+
+This is also the mandatory-to-implement configuration ({{request}}), because `may_act` requires the IdP to decide and record an eligible actor when it mints the assertion, and a key-bound assertion is excluded from the base profile ({{id-token-profile}}).  Both raise the assurance of an exchange, and both require changing how assertions are issued.  This profile does not require either, so that a deployment can adopt cross-client delegation by administering a relationship rather than by changing its token issuance.  The assurance of the base profile therefore rests on administration rather than on anything carried in the assertion, and a deployment operating it MUST apply the compensating controls of {{security-captured}}: short assertion lifetimes, replay controls where the assertion carries a unique identifier, and CCDRs scoped as narrowly as the deployment allows.  A deployment that can supply an IdP-verifiable per-assertion artifact SHOULD do so rather than rely on those controls alone.  Neither property, by itself, establishes End-User consent or per-request authorization by the End-User; see {{security-consent}}.  A deployment SHOULD document the token-endpoint authorization it requires and the handoff assurance it enforces, and when it operates without an IdP-verifiable per-assertion artifact SHOULD apply the compensating controls of {{security}}: short assertion lifetimes and replay controls ({{security-captured}}), narrowly scoped CCDRs ({{security-trust-anchor}}), and constrained downstream authorization ({{security-freshness}}).  Whether a future revision should require an IdP-verifiable per-assertion artifact is left open; see {{open-items}}.
 
 
 # Cross-Client Delegation Relationship {#ccdr}
@@ -478,6 +482,8 @@ A Token Exchange request under this profile is a request to the token endpoint w
 
    *  If the resolved Initiator is the same client registration as the authenticated client, this profile does not govern.  The request is a same-client exchange handled under base {{RFC8693}} and the applicable token profile, whose audience check the assertion already satisfies.
 
+   *  If the assertion's `aud` is single-valued and identifies the authenticated client, this profile does not govern either, even where `azp` resolves the Initiator to a different registration.  Such an assertion already satisfies the audience check without any exception, so no relaxation is required and none is applied; the request is handled under base {{RFC8693}} and the applicable token profile.  This is the shape produced by the cross-client identity conventions of {{related-google}}, in which the initiating client obtains an assertion audienced to the client that will consume it.  A deployment that can mint such an assertion does not need this profile at all ({{applicability}}), and requiring it to administer a CCDR in order to keep working would be a barrier to no purpose.
+
    *  Otherwise the request is a cross-client delegation and this profile governs.
 
 5. When this profile governs, apply the remaining rules of {{processing-steps}} (steps 3 through 8: actor token, CCDR, `may_act`, policy, and issuance) in full.  Only successful completion of these rules authorizes relaxing the audience-equals-requesting-client check.  The IdP MUST NOT relax that check, and MUST NOT treat the authenticated client's membership in a multi-valued `aud` claim as satisfying it, on any other basis.
@@ -580,8 +586,11 @@ If the IdP issues a refresh token in the absence of `may_act`, it MUST bind the 
 
 An IdP advertises support for this profile in its authorization server metadata {{RFC8414}} using the `authorization_grant_profiles_supported` parameter defined by {{I-D.ietf-oauth-identity-assertion-authz-grant}}, together with a companion parameter defined by this document:
 
+`cross_client_delegation_supported`:
+: Boolean value indicating support for this profile.  The value is `true` when supported.  An authorization server that supports this profile MUST include this member and MUST also include `urn:ietf:params:oauth:grant-type:token-exchange` in `grant_types_supported`.  This member is defined by this document and does not depend on any other specification, so the mandatory-to-implement combination of {{request}} is discoverable today.
+
 `authorization_grant_profiles_supported`:
-: The set of grant profile identifiers the authorization server supports, as defined by {{I-D.ietf-oauth-identity-assertion-authz-grant}}.  An authorization server that supports this profile MUST include the value `urn:ietf:params:oauth:grant-profile:cross-client-delegation` in this array and MUST also include `urn:ietf:params:oauth:grant-type:token-exchange` in `grant_types_supported`.
+: OPTIONAL.  The set of grant profile identifiers the authorization server supports, as defined by {{I-D.ietf-oauth-identity-assertion-authz-grant}}.  An authorization server that supports this profile and also implements that parameter SHOULD include the value `urn:ietf:params:oauth:grant-profile:cross-client-delegation` in this array.  This is a convenience for deployments already using that discovery surface; it is not required, because {{related-idjag}} describes an unresolved dependency on the specification that defines it.
 
 `cross_client_delegation_token_types_supported`:
 : OPTIONAL.  A JSON array of objects describing the (`subject_token_type`, `actor_token_type`) combinations the authorization server will accept under this profile.  Each object MUST contain a `subject_token_type` member and an `actor_token_type` member, each of whose values is a token type identifier URI.  Unknown object members MUST be ignored.  If this parameter is omitted, support for the mandatory ID Token and JWT client assertion combination is implied.  If it is present, it MUST include that combination.
@@ -593,6 +602,7 @@ Example authorization server metadata:
   "grant_types_supported": [
     "urn:ietf:params:oauth:grant-type:token-exchange"
   ],
+  "cross_client_delegation_supported": true,
   "authorization_grant_profiles_supported": [
     "urn:ietf:params:oauth:grant-profile:cross-client-delegation"
   ],
@@ -659,7 +669,7 @@ Party identity:
 : The PRA is signed by the Source Confirmation Key, and step 2 of {{processing-steps}} resolves the Identity Assertion to the Initiator.  Together these map the PRA signing key to the Initiator as a validated actor identity, which is what {{I-D.mcguinness-oauth-presenter-rebinding}} requires before the Initiator may be recorded as a prior actor.  The party proving the Recipient Presenter key MUST be the client authenticated for the request, that is, the Delegate; the IdP confirms this because the Delegate authenticates as its client, presents its `actor_token`, and proves that key on the same request.  Because the mechanism is one hop, at most one prior actor arises from it, so the `act` nesting this composition produces is bounded at the Delegate with the Initiator nested beneath, as shown in {{issued-token}}.
 
 Request-constraint mapping:
-: The `presenter_limits` members `audience`, `resource`, and `scope` bound the correspondingly named Token Exchange request values, in addition to the CCDR, `may_act`, and exchange-time policy.  When the PRA carries one of these members, the request MUST carry the corresponding parameter; the IdP MUST NOT supply a default for a limited dimension.  These limits are a Cartesian-product ceiling, as {{I-D.mcguinness-oauth-presenter-rebinding}} explains: a PRA permitting two audiences and two scopes permits both scopes at both audiences.  An Initiator that needs to correlate a scope with a particular audience MUST sign a separate PRA for each combination.  Presenter Rebinding defines no limit for `authorization_details`; a deployment that requires one MUST rely on the CCDR constraints of {{ccdr}} and on exchange-time policy for that dimension, which this profile requires independently.
+: The PRA `presenter_limits` member `audience` bounds the Token Exchange `audience` request values, in addition to the CCDR, `may_act`, and exchange-time policy.  When the PRA carries it, the request MUST carry an `audience` parameter; the IdP MUST NOT supply a default for it.  Presenter Rebinding bounds no other dimension, so resources, scopes, and `authorization_details` rest on the CCDR constraints of {{ccdr}} and on the exchange-time policy evaluation of step 7 of {{processing-steps}}, both of which this profile requires independently of any PRA.
 
 Issued token:
 : The output is an access token sender-constrained to the Recipient Presenter key, with `token_type` of `DPoP`.  This narrows {{issued-token}} in three ways for a composed exchange.  Sender constraining is REQUIRED rather than RECOMMENDED, and mutual TLS {{RFC8705}} is not available for it, because the binding must be to the key the PRA authorized.  The output token type is restricted to an access token, so the composed profile is the mandatory-to-implement combination of {{request}}; issuing an ID-JAG or any other type under a composed exchange requires a specification defining how the Recipient Presenter key binding is represented in that type.  And the IdP MUST NOT issue a refresh token, extending the prohibition {{issued-token}} already applies to an assertion carrying `may_act`, for the same reason and with greater force: a PRA is a point-in-time authorization of one presenter transition over one assertion, and a refresh token decoupled from it would let the Delegate obtain further tokens after the PRA expired with no authorized transition and no re-evaluation of the handoff.
@@ -775,7 +785,7 @@ This document requests IANA to register the following value in the "OAuth URI" r
 *  Change Controller: IETF
 *  Specification Document: {{as-metadata}} of this document
 
-Note: The `authorization_grant_profiles_supported` metadata parameter and the `urn:ietf:params:oauth:grant-profile:` value convention referenced by this document are defined by {{I-D.ietf-oauth-identity-assertion-authz-grant}}.  The registration above is contingent on the progression of that specification; if its grant profile identifier scheme changes, this registration should be aligned with the final scheme.
+Note: The `authorization_grant_profiles_supported` metadata parameter and the `urn:ietf:params:oauth:grant-profile:` value convention referenced by this document are defined by {{I-D.ietf-oauth-identity-assertion-authz-grant}}.  The registration above is contingent on the progression of that specification; if its grant profile identifier scheme changes, this registration should be aligned with the final scheme.  Discovery of this profile does not depend on that outcome: {{as-metadata}} defines `cross_client_delegation_supported` for that purpose, and the registration above serves deployments that already use the ID-JAG discovery surface.
 
 ## OAuth Dynamic Client Registration Metadata Registration {#iana-client-metadata}
 
@@ -796,6 +806,13 @@ and:
 ## OAuth Authorization Server Metadata Registration {#iana-as-metadata}
 
 This document requests IANA to register the following value in the "OAuth Authorization Server Metadata" registry established by {{RFC8414}}:
+
+*  Metadata Name: `cross_client_delegation_supported`
+*  Metadata Description: Boolean indicating authorization server support for the Cross-Client Delegation profile
+*  Change Controller: IESG
+*  Specification Document: {{as-metadata}} of this document
+
+and:
 
 *  Metadata Name: `cross_client_delegation_token_types_supported`
 *  Metadata Description: JSON array of objects describing the subject token type and actor token type combinations accepted under the Cross-Client Delegation profile
